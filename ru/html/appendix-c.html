@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head> 
+
+<body bgcolor="white" text="black">
+<h1>Appendix C</h1>
+
+<h1>CLOS Operators Not Documented in This Book</h1>
+
+<p>This appendix briefly mentions the CLOS operators that are not covered in this book.</p>
+
+<h3>Generic Functions with Local Names or No Names</h3>
+
+<p>CLOS enables you to define generic functions whose names are local in much the same way that Common Lisp enables you to define ordinary functions whose names are local. You can also define a generic function with no name; this is analogous to defining an ordinary Lisp function with no name.</p>
+
+<p><strong>generic-flet special form</strong></p>
+
+<pre><code>    Defines new generic functions and methods; the scoping is like flet.
+</code></pre>
+
+<p><strong>generic-labels special form</strong> </p>
+
+<pre><code>    Defines new generic functions and methods; the scoping is like labels.
+</code></pre>
+
+<p><strong>with-added-methods special form</strong> </p>
+
+<pre><code>    Defines new generic functions and methods; the names are scoped within the lexical context
+    of the body. This is an extension to generic-labels.
+</code></pre>
+
+<p><strong>generic-function macro</strong> </p>
+
+<pre><code>    Defines an anonymous generic function and methods for it.
+</code></pre>
+
+<h3>Generic Functions Called in Error Situations</h3>
+
+<p>These generic functions are not intended to be called by users; they are called when errors are encountered. These generic functions are exception handlers. The default method signals an error, but you can specialize the generic function to do something different.</p>
+
+<p><strong>slot-unbound generic function</strong> </p>
+
+<pre><code>    Called when an attempt is made to read an unbound slot.
+</code></pre>
+
+<p><strong>slot-missing generic function</strong> </p>
+
+<pre><code>    Called when an attempt is made to access a slot of an instance, but there is no slot by
+    that name accessible to the instance.
+</code></pre>
+
+<p><strong>no-applicable-method generic function</strong> </p>
+
+<pre><code>    Called when a generic function is called and there is no applicable method for it.
+</code></pre>
+
+<p><strong>no-next-method generic function</strong></p>
+
+<pre><code>    Called when call-next-method is used and there is no "next method."
+</code></pre>
+
+<h3>Tools for Defining Method Combination Types</h3>
+
+<p>The long form of define-method-combination offers a rich syntax for defining new method combination types. The other operators mentioned here are used within the body of define-method-combination.</p>
+
+<p><strong>define-method-combination macro</strong> </p>
+
+<pre><code>    Defines a new method combination type.
+</code></pre>
+
+<p><strong>call-method macro</strong> </p>
+
+<pre><code>    In the framework of a method combination type, indicates that a method should be called.
+</code></pre>
+
+<p><strong>method-qualifiers generic function</strong> </p>
+
+<pre><code>    Returns a list of the qualifiers of a method.
+</code></pre>
+
+<p><strong>method-combination-error function</strong> </p>
+
+<pre><code>    Signals an error encountered in the method combination process.
+</code></pre>
+
+<p><strong>invalid-method-error function</strong> </p>
+
+<pre><code>    Signals an error when an applicable method has method qualifiers that are not recognized
+    by the method combination type.
+</code></pre>
+
+<h3>Miscellaneous Operators</h3>
+
+<p><strong>add-method generic function</strong> </p>
+
+<pre><code>    Adds a method object to a generic function; this function level operator implements
+    defmethod and other macros that create methods for generic functions.
+</code></pre>
+
+<p><strong>documentation generic function</strong> </p>
+
+<pre><code>    Retrieves the documentation string of various kinds of Lisp objects.
+</code></pre>
+
+<p><strong>ensure-generic-function function</strong> </p>
+
+<pre><code>    Defines a generic function object; this function level operator implements defgeneric and
+    other macros that create generic functions.
+</code></pre>
+
+<p><strong>function-keywords</strong> </p>
+
+<pre><code>    Returns the keyword parameters of a given method.
+</code></pre>
+
+<p><strong>make-instances-obsolete generic function</strong> </p>
+
+<pre><code>    Called by the system when a class is redefined to trigger the updating process. Users can
+    call make-instances-obsolete to cause the update-instance-for-redefined-class generic
+    function to be called for instances of a given class (and for instances of subclasses).
+</code></pre>
+
+<p><strong>slot-makunbound function</strong> </p>
+
+<pre><code>    Makes a slot of an instance unbound.
+</code></pre>
+
+<p><strong>slot-exists-p function</strong> </p>
+
+<pre><code>    Tests whether an instance has a slot of a given name.
+</code></pre>
+
+<p><strong>symbol-macrolet macro</strong> </p>
+
+<pre><code>    Associates forms with variables within its body; using such a variable causes the form to
+    be executed. This macro implements the with-accessors and with-slots macros.
+</code></pre>
+</body> </html>

@@ -1,0 +1,1543 @@
+#. extracted from ./en/appendix-b.md
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-09-24 17:39+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Translate Toolkit 3.7.2\n"
+
+#: ./en/appendix-b.md:3
+msgid ""
+"# Appendix B \n"
+"# Syntax of CLOS Operators"
+msgstr ""
+
+#: ./en/appendix-b.md:5
+msgid ""
+"This appendix is intended to be used as a reference. It briefly describes "
+"the purpose, syntax, and return values of the operators covered by this "
+"book, and refers to the sections in the book where the operator is presented "
+"in context. The operators are listed alphabetically."
+msgstr ""
+
+#: ./en/appendix-b.md:7
+msgid ""
+"The descriptions of the CLOS operators are adapted from the \"Common Lisp "
+"Object System Specification\" with permission from the authors. This book "
+"does not cover every operator in the CLOS programmer interface, and the "
+"descriptions given here are not complete reference documentation. Refer to "
+"the \"Common Lisp Object System Specification\" for the complete definition "
+"of CLOS."
+msgstr ""
+
+#: ./en/appendix-b.md:9
+msgid ""
+"In Appendix C, we list the operators in the programmer interface that are "
+"not covered by this book."
+msgstr ""
+
+#: ./en/appendix-b.md:11
+msgid ""
+"**call-next-method** &rest arguments                                     "
+"Function"
+msgstr ""
+
+#: ./en/appendix-b.md:22
+msgid ""
+"\t\tUsed within a method to call the \"next method,\" which is defined by "
+"the method combination\n"
+"\t\ttype in use by the generic function, call-next-method returns the values "
+"of the next method.\n"
+"\t\tIf there is no next method, an error is signaled. (The default behavior "
+"of signaling an error\n"
+"\t\tis supported by the no-next-met hod generic function, which is called "
+"whenever this error\n"
+"\t\tis detected.) You can use next-method-p in the body of a method to test "
+"whether there is a\n"
+"\t\tnext method. \n"
+"\t\tThe standard method combination type supports call-next-method in around-"
+"methods and primary\n"
+"\t\tmethods. The operator method combination types support call-next-method "
+"in around-methods\n"
+"\t\tonly."
+msgstr ""
+
+#: ./en/appendix-b.md:24
+msgid "\t\targuments  \t     Arguments to be passed to the next method."
+msgstr ""
+
+#: ./en/appendix-b.md:29
+msgid ""
+"\t\tUsually, you call call-next-met hod with no arguments, and the original "
+"arguments given to\n"
+"\t\tthe generic function are passed to the next method. However, you can "
+"pass different arguments\n"
+"\t\tto the next method as long as the new arguments would cause the same set "
+"of applicable\n"
+"\t\tmethods to be selected, as did the original arguments."
+msgstr ""
+
+#: ./en/appendix-b.md:31
+msgctxt "./en/appendix-b.md:31"
+"./en/appendix-b.md:31"
+"./en/appendix-b.md:31"
+"./en/appendix-b.md:31"
+"./en/appendix-b.md:31"
+"./en/appendix-b.md:31"
+"./en/appendix-b.md:31"
+"./en/appendix-b.md:31"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:36
+msgid ""
+"\t\t    \"Around-Methods,\" page 102 \n"
+"\t\t    \"Calling a Shadowed Primary Method,\" page 105 \n"
+"\t\t    \"Summary of the Standard Method Combination Type,\" page 113 \n"
+"\t\t    \"Controlling the Generic Dispatch,\" page 101"
+msgstr ""
+
+#: ./en/appendix-b.md:38
+msgid ""
+"**change-class** instance new-class                                         "
+"Generic Function"
+msgstr ""
+
+#: ./en/appendix-b.md:41
+msgid ""
+"\t\tChanges the class of an instance to a new class and calls the generic "
+"function\n"
+"\t\tupdate-instance-for-different-class. The change-class function returns "
+"the instance."
+msgstr ""
+
+#: ./en/appendix-b.md:43
+msgid "\t\tinstance                 An object. "
+msgstr ""
+
+#: ./en/appendix-b.md:45
+msgid "\t\tnew-class                A class object or the name of a class."
+msgstr ""
+
+#: ./en/appendix-b.md:50
+msgid ""
+"\t\tCLOS guarantees that change-class is supported when both the original "
+"class of the instance\n"
+"\t\tand the new class are of the metaclass standard-class. An individual "
+"CLOS implementation\n"
+"\t\tmight support change-class in other circumstances as well."
+msgstr ""
+
+#: ./en/appendix-b.md:52
+msgctxt "./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+"./en/appendix-b.md:52"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:55
+msgid ""
+"\t\t     \"Changing the Class of an Instance,\" page 151 \n"
+"\t\t     \"A Procedural Definition: Initialization,\" page 165"
+msgstr ""
+
+#: ./en/appendix-b.md:57
+msgid ""
+"**class-name** class                                                         "
+"Generic Function "
+msgstr ""
+
+#: ./en/appendix-b.md:59
+msgid "\t\tReturns the name of the class object. "
+msgstr ""
+
+#: ./en/appendix-b.md:61
+msgid "\t\tclass A class object. "
+msgstr ""
+
+#: ./en/appendix-b.md:63
+msgid ""
+"\t\tYou can use setf with class-name to change the name of the class object."
+msgstr ""
+
+#: ./en/appendix-b.md:65
+msgctxt "./en/appendix-b.md:65"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:67
+msgid "\t\t     \"Mapping Between Names and Objects,\" page 134"
+msgstr ""
+
+#: ./en/appendix-b.md:69
+msgid ""
+"**class-of** object                                                          "
+"Function"
+msgstr ""
+
+#: ./en/appendix-b.md:72
+msgid ""
+"\t\tReturns the class of the object. Note that every object is of some "
+"class, class-of\n"
+"\t\treturns a class object. "
+msgstr ""
+
+#: ./en/appendix-b.md:74
+msgid "\t\tobject              Any object."
+msgstr ""
+
+#: ./en/appendix-b.md:77
+msgid ""
+"**defclass** name ({superclass}`*`)"
+"                                             Macro\n"
+"\t\t   ([slot-spec]`*`) [class-option]`*`"
+msgstr ""
+
+#: ./en/appendix-b.md:81
+msgid ""
+"\t\tDefines a new class or redefines an existing one. The name of the class "
+"and the class\n"
+"\t\tobject are made valid type specifiers, defclass returns the class object "
+"that represents\n"
+"\t\tthe new class."
+msgstr ""
+
+#: ./en/appendix-b.md:83
+msgid "\t\tname               A symbol naming this class. "
+msgstr ""
+
+#: ./en/appendix-b.md:85
+msgid ""
+"\t\tsuperclass         A symbol naming a direct superclass of this class."
+msgstr ""
+
+#: ./en/appendix-b.md:89
+msgid ""
+"\t\tslot-spec          Defines a slot of the new class. Can be given as  "
+"symbol (the name of\n"
+"\t\t                   the slot), or as a list containing the name of the "
+"slot followed by\n"
+"\t\t\t\t   one or more slot-options pertaining to the slot:"
+msgstr ""
+
+#: ./en/appendix-b.md:92
+msgid ""
+"\t\t\t\t       slot-name \n"
+"\t\t\t\t        (slot-name slot-options...) "
+msgstr ""
+
+#: ./en/appendix-b.md:94
+msgid "\t\t\t\t   The slot-options are as follows: "
+msgstr ""
+
+#: ./en/appendix-b.md:96
+msgid "\t\t       :accessor reader-name "
+msgstr ""
+
+#: ./en/appendix-b.md:102
+msgid ""
+"\t\t                   Defines methods for a reader and a writer generic "
+"function. You can\n"
+"\t\t\t\t   then use the reader named reader-name to read the value of this "
+"slot,\n"
+"\t\t\t\t   and use the writer named (setf reader-name) to write the value of "
+"this\n"
+"\t\t\t\t   slot. \n"
+"\t\t       :reader reader-name "
+msgstr ""
+
+#: ./en/appendix-b.md:105
+msgid ""
+"\t\t                   Defines a method for the reader generic function "
+"named reader-name for\n"
+"\t\t\t\t   reading the value of this slot. "
+msgstr ""
+
+#: ./en/appendix-b.md:107
+msgid "\t\t       :writer function-spec"
+msgstr ""
+
+#: ./en/appendix-b.md:113
+msgid ""
+"\t\t                   Defines a method for the writer generic function "
+"named function-spec\n"
+"\t\t\t\t   for writing the value of this slot. If function-spec is a symbol, "
+"you\n"
+"\t\t\t\t   call the writer with the normal Lisp syntax: (symbol new-value "
+"instance).\n"
+"\t\t\t\t   If function-spec is a list such as (setf symbol), you call the "
+"writer\n"
+"\t\t\t\t   with the setf syntax, which is (setf (symbol instance) new-value)."
+msgstr ""
+
+#: ./en/appendix-b.md:115
+msgid "\t\t       :documentation string"
+msgstr ""
+
+#: ./en/appendix-b.md:117
+msgid "\t\t                   Specifies documentation for the slot."
+msgstr ""
+
+#: ./en/appendix-b.md:119
+msgid "\t\t       :allocation allocation-type"
+msgstr ""
+
+#: ./en/appendix-b.md:123
+msgid ""
+"                                   States whether this is a shared or local "
+"slot. The default allocation-type\n"
+"\t\t\t\t   is :instance, which indicates a local slot; :class indicates a "
+"shared\n"
+"\t\t\t\t   slot."
+msgstr ""
+
+#: ./en/appendix-b.md:125
+msgid "\t\t       :initform form"
+msgstr ""
+
+#: ./en/appendix-b.md:129
+msgid ""
+"\t\t                   Gives a default initial value form for the slot. form "
+"is evaluated each\n"
+"\t\t\t\t   time it is used, in the lexical environment in which the defclass "
+"was\n"
+"\t\t\t\t   evaluated."
+msgstr ""
+
+#: ./en/appendix-b.md:131
+msgid "\t\t       :initarg name"
+msgstr ""
+
+#: ./en/appendix-b.md:135
+msgid ""
+"\t\t                   Specifies an initarg for the slot. You can then "
+"initialize the value of\n"
+"\t\t\t\t   the slot when making an instance, by providing this initarg name "
+"and a\n"
+"\t\t\t\t   value in the call to make-instance."
+msgstr ""
+
+#: ./en/appendix-b.md:137
+msgid "\t\t       :type type-specifier"
+msgstr ""
+
+#: ./en/appendix-b.md:141
+msgid ""
+"\t\t                   States that the value of this slot is expected to be "
+"of the type named\n"
+"\t\t\t\t   by type-specifier. This can result in compiler optimizations, but "
+"CLOS\n"
+"\t\t\t\t   does not guarantee error checking when the value is stored in the "
+"slot. "
+msgstr ""
+
+#: ./en/appendix-b.md:143
+msgid "*class-option*           An option pertaining to the class as a whole."
+msgstr ""
+
+#: ./en/appendix-b.md:145
+msgid "\t\tThe class-options are as follows: "
+msgstr ""
+
+#: ./en/appendix-b.md:148
+msgid ""
+"\t\t       (: documentation string) \n"
+"\t\t                  Specifies documentation for the class."
+msgstr ""
+
+#: ./en/appendix-b.md:154
+msgid ""
+"\t\t       (:default-initargs {initarg-name form}*)\n"
+"\t\t                  Specifies default values for initargs. Each form is "
+"treated as a default\n"
+"\t\t\t\t  initial value form for the initarg of initarg-name. The :default-"
+"initargs\n"
+"\t\t\t\t  class option is the only class option inherited by subclasses; "
+"see\n"
+"\t\t\t\t  \"Initialization Arguments,\" page 160."
+msgstr ""
+
+#: ./en/appendix-b.md:156
+msgid "\t\t       (:metaclass class-name)"
+msgstr ""
+
+#: ./en/appendix-b.md:159
+msgid ""
+"\t\t                  States the class of the newly defined class; this is "
+"known as the\n"
+"\t\t\t\t  metaclass. The default metaclass is standard-class."
+msgstr ""
+
+#: ./en/appendix-b.md:161
+msgctxt "./en/appendix-b.md:161"
+msgid "For related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:167
+msgid ""
+"\t\t\"Defining the Kinds of Objects—Classes,\" page 19 \n"
+"\t\t\"Implementation Choices: Methods versus Slots,\" page 66 \n"
+"\t\t\"Class Inheritance,\" page 117 \n"
+"\t\t\"Redefining Classes,\" page 140 \n"
+"\t\t\"Creating and Initializing Instances,\" page 155 "
+msgstr ""
+
+#: ./en/appendix-b.md:169
+msgid ""
+"**defgeneric** name lambda-list {option}*"
+"                                                        Macro "
+msgstr ""
+
+#: ./en/appendix-b.md:174
+msgid ""
+"\t\tDefines a new generic function or redefines an existing one. Enables you "
+"to specify aspects\n"
+"\t\tof the generic function, such as the lambda-list, documentation, method "
+"combination type,\n"
+"\t\targument precedence order, and declarations. You can also define methods "
+"within the\n"
+"\t\tdefgeneric form, defgeneric returns the generic function object."
+msgstr ""
+
+#: ./en/appendix-b.md:177
+msgid ""
+"\t\tname               Names the generic function; it is either a symbol or "
+"a list such as\n"
+"\t\t                   (setf symbol). "
+msgstr ""
+
+#: ./en/appendix-b.md:182
+msgid ""
+"\t\tlambda-list        Describes the parameters of this generic function. It "
+"cannot contain\n"
+"\t\t                   any taux variables. Optional and keyword arguments "
+"may not have default\n"
+"\t\t\t\t   initial value forms or use supplied-p parameters. No parameter in "
+"this\n"
+"\t\t\t\t   lambda-list may be specialized. "
+msgstr ""
+
+#: ./en/appendix-b.md:184
+msgid "\t\toptions            The options are as follows: "
+msgstr ""
+
+#: ./en/appendix-b.md:186
+msgid "\t\t     (:argument-precedence-order {parameter-name}*) "
+msgstr ""
+
+#: ./en/appendix-b.md:192
+msgid ""
+"\t\t                   This affects the ranking of methods by precedence "
+"order. Instead of the\n"
+"\t\t\t\t   default left-to-right order, the arguments are considered in the "
+"order\n"
+"\t\t\t\t   of the parameter names given here. Each required parameter must "
+"appear\n"
+"\t\t\t\t   in this list.\n"
+"\t\t\t\t   For more information, see \"Summary of Method Inheritance,\" page "
+"98. "
+msgstr ""
+
+#: ./en/appendix-b.md:194
+msgid "\t\t     (declare {declaration}*)"
+msgstr ""
+
+#: ./en/appendix-b.md:199
+msgid ""
+"\t\t                   Specifies declarations for the generic function, "
+"optimize can be given\n"
+"\t\t\t\t   to specify whether the generic dispatch procedure should be "
+"optimized\n"
+"\t\t\t\t   for speed or space. The following declarations are not allowed:\n"
+"\t\t\t\t   special, ftype, function, inline, notline, and declaration."
+msgstr ""
+
+#: ./en/appendix-b.md:201
+msgid "\t\t     (documentation string)"
+msgstr ""
+
+#: ./en/appendix-b.md:203
+msgid ""
+"\t\t                   Specifies documentation for the generic function. "
+msgstr ""
+
+#: ./en/appendix-b.md:205
+msgid "\t\t     (:method-combination symbol {arg}*) "
+msgstr ""
+
+#: ./en/appendix-b.md:214
+msgid ""
+"\t\t                   Specifies that this generic function uses the method "
+"combination type\n"
+"\t\t\t\t   whose name is symbol, args are any arguments used by the method\n"
+"\t\t\t\t   combination type. For example, all method combination types "
+"defined by\n"
+"\t\t\t\t   the short form of define-method-combination accept an optional "
+"order\n"
+"\t\t\t\t   argument, which can be :most-specific-last to reverse the order "
+"of the\n"
+"\t\t\t\t   primary methods. :most-specific-first is the default.\n"
+"\t\t\t\t   For more information, see \"Defining a New Method Combination "
+"Type,\"\n"
+"\t\t\t\t   page 109."
+msgstr ""
+
+#: ./en/appendix-b.md:217
+msgid ""
+"\t\t    (:method {qualifier}* specialized-lambda-list {decl \\ doc}* \n"
+"\t\t                  {form}*)"
+msgstr ""
+
+#: ./en/appendix-b.md:221
+msgid ""
+"\t\t                   Defines a method for this generic function. The "
+"method's qualifier,\n"
+"\t\t\t\t   specialized lambda-list, declarations, documentation, and forms "
+"are\n"
+"\t\t\t\t   the same as for defmethod. "
+msgstr ""
+
+#: ./en/appendix-b.md:223
+msgid "\t\t    (:generic-function-class class-name)"
+msgstr ""
+
+#: ./en/appendix-b.md:226
+msgid ""
+"\t\t                   Specifies the class of the generic function object; "
+"the default is\n"
+"\t\t\t\t   standard-generic-function. "
+msgstr ""
+
+#: ./en/appendix-b.md:228
+msgid "\t\t    (:method-class class-name)"
+msgstr ""
+
+#: ./en/appendix-b.md:231
+msgid ""
+"\t\t                   Specifies the class of the methods for this generic "
+"function; the\n"
+"\t\t\t\t   default is standard-method."
+msgstr ""
+
+#: ./en/appendix-b.md:233
+msgid ""
+"**defgeneric** is used to define a named generic function. You can use "
+"generic-function to define an anonymous generic function, generic-function "
+"has the same syntax as defgeneric, except the name argument is omitted."
+msgstr ""
+
+#: ./en/appendix-b.md:235
+msgctxt "./en/appendix-b.md:235"
+msgid "For related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:240
+msgid ""
+"\t\t\"Defining the Interface—Generic Functions,\" page 27 \n"
+"\t\t\"Congruent Lambda-Lists,\" page 132 \n"
+"\t\t\"Redefining Methods and Generic Functions,\" page 143 \n"
+"\t\t\"Removing Generic Functions and Methods,\" page 136"
+msgstr ""
+
+#: ./en/appendix-b.md:242
+msgid ""
+"**define-method-combination** name [option]*"
+"                                                Macro "
+msgstr ""
+
+#: ./en/appendix-b.md:245
+msgid ""
+"\t\tDefines a new method combination type. Provides a convenient short-form "
+"syntax, which\n"
+"\t\tdefines an operator method combination type. The syntax given here is "
+"for the short form. "
+msgstr ""
+
+#: ./en/appendix-b.md:247
+msgid "\t\tname                A symbol naming this method combination type. "
+msgstr ""
+
+#: ./en/appendix-b.md:249
+msgid "\t\toption              These are the options for the short form:"
+msgstr ""
+
+#: ./en/appendix-b.md:251
+msgid "\t\t      :documentation string "
+msgstr ""
+
+#: ./en/appendix-b.md:254
+msgid ""
+"\t\t                    Specifies documentation for the method combination "
+"type. \n"
+"\t\t      :identity-with-one-argument boolean"
+msgstr ""
+
+#: ./en/appendix-b.md:259
+msgid ""
+"\t\t                    Requests the compiler to optimize for cases when "
+"there is only one\n"
+"\t\t\t\t    method; this indicates that the value of that method should be "
+"returned\n"
+"\t\t\t\t    as the value of the generic function, rather than the operator "
+"being\n"
+"\t\t\t\t    called. This makes sense for operators such as progn, and, +, "
+"and max."
+msgstr ""
+
+#: ./en/appendix-b.md:261
+msgid "\t\t      :operator operator"
+msgstr ""
+
+#: ./en/appendix-b.md:263
+msgid ""
+"\t\t                    Specifies the operator that receives the values of "
+"the methods."
+msgstr ""
+
+#: ./en/appendix-b.md:265
+msgid ""
+"The alternate long form provides a more flexible syntax that allows for "
+"defining more complex method combination types. This book does not cover the "
+"syntax of the long form."
+msgstr ""
+
+#: ./en/appendix-b.md:267
+msgid "For related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:269
+msgid "\t\t\"Defining a New Method Combination Type,\" page 109"
+msgstr ""
+
+#: ./en/appendix-b.md:272
+msgid ""
+"**defmethod** name [qualifier]* specialized-lambda-"
+"list                                        Macro\n"
+"\t\t   {decl | doc }* {form}* "
+msgstr ""
+
+#: ./en/appendix-b.md:275
+msgid ""
+"\t\tDefines a new method for a generic function or redefines an existing "
+"one. defmethod returns\n"
+"\t\tthe method object."
+msgstr ""
+
+#: ./en/appendix-b.md:278
+msgid ""
+"\t\tname                 The name of the generic function that this method "
+"is implementing. This\n"
+"\t\t                     is either a symbol or a list such as (setf symbol). "
+msgstr ""
+
+#: ./en/appendix-b.md:284
+msgid ""
+"\t\tqualifier            A non-null atom used to identify the role of this "
+"method, according to\n"
+"\t\t                     the method combination type of the generic "
+"function. When standard\n"
+"\t\t\t\t     method combination type is used, the lack of any qualifier "
+"indicates a\n"
+"\t\t\t\t     primary method. The standard method combination also recognizes "
+"the\n"
+"\t\t\t\t     method qualifiers :before, :after, and :around. "
+msgstr ""
+
+#: ./en/appendix-b.md:286
+msgid "\t\tspecialized-lambda-list"
+msgstr ""
+
+#: ./en/appendix-b.md:292
+msgid ""
+"\t\t                     An ordinary function lambda-list except that the "
+"name of any of the\n"
+"\t\t\t\t     required parameters can be replaced by a specialized parameter. "
+"That is,\n"
+"\t\t\t\t     a required parameter is either var or (var parameter-"
+"specializer-name).\n"
+"\t\t\t\t     The optional parameters have exactly the same syntax as they do "
+"in an\n"
+"\t\t\t\t     ordinary lambda-lists, and they may not be specialized."
+msgstr ""
+
+#: ./en/appendix-b.md:294
+msgid "\t\tparameter-specializer-name"
+msgstr ""
+
+#: ./en/appendix-b.md:298
+msgid ""
+"\t\t                     Can be a list such as (eql form) or a symbol naming "
+"a class. The class\n"
+"\t\t\t\t     can be a user-defined class, a built-in class, or a structure "
+"defined by\n"
+"\t\t\t\t     defstruct if the :type option was not used. "
+msgstr ""
+
+#: ./en/appendix-b.md:300
+msgid "\t\tdecl                   A declaration pertaining to this method. "
+msgstr ""
+
+#: ./en/appendix-b.md:302
+msgid "\t\tdoc                    A documentation string for this method. "
+msgstr ""
+
+#: ./en/appendix-b.md:305
+msgid ""
+"\t\tform                   The body of this method. This is Lisp code to be "
+"executed when the\n"
+"\t\t                       generic dispatch calls this method."
+msgstr ""
+
+#: ./en/appendix-b.md:307
+msgctxt "./en/appendix-b.md:307"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:315
+msgid ""
+"\t\t     \"Methods for Null Locks,\" page 32 \n"
+"\t\t     \"Methods for Simple Locks,\" page 35 \n"
+"\t\t     \"Programming with Methods,\" page 65 \n"
+"\t\t     \"Summary of Method Inheritance,\" page 98 \n"
+"\t\t     \"Congruent Lambda-Lists,\" page 132 \n"
+"\t\t     \"Redefining Methods and Generic Functions,\" page 143 \n"
+"\t\t     \"Removing Generic Functions and Methods,\" page 136 "
+msgstr ""
+
+#: ./en/appendix-b.md:317
+msgid ""
+"**describe** "
+"object                                                                  "
+"Generic Function "
+msgstr ""
+
+#: ./en/appendix-b.md:321
+msgid ""
+"\t\tPrints a description of an object on the standard output stream. This is "
+"a generic function\n"
+"\t\tfor which you can write methods, to specialize its behavior for a given "
+"class, describe\n"
+"\t\treturns no values. "
+msgstr ""
+
+#: ./en/appendix-b.md:323
+msgid "\t\tobject                  Any Lisp object."
+msgstr ""
+
+#: ./en/appendix-b.md:326
+msgid ""
+"\t\tCLOS provides a default primary method for describe, describe uses the "
+"standard method\n"
+"\t\tcombination type. "
+msgstr ""
+
+#: ./en/appendix-b.md:328
+msgctxt "./en/appendix-b.md:328"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:333
+msgid ""
+"\t\t    \"Specializing describe for Locks,\" page 39 \n"
+"\t\t    \"An After-Method for Describing Simple Locks,\" page 40 \n"
+"\t\t    \"Specializing describe for Ordered Locks,\" page 49 \n"
+"\t\t    \"Specializing describe for Print-Request Queues,\" page 56 "
+msgstr ""
+
+#: ./en/appendix-b.md:335
+msgid ""
+"**find-class** symbol soptional (errorp t) "
+"environment                                  Function"
+msgstr ""
+
+#: ./en/appendix-b.md:337
+msgid ""
+"\t\tIf the symbol is the name of a class, find-class returns the class "
+"object."
+msgstr ""
+
+#: ./en/appendix-b.md:339
+msgid "\t\tsymbol                   The name of a class."
+msgstr ""
+
+#: ./en/appendix-b.md:342
+msgid ""
+"\t\terrorp                   States what to do if there is no class by this "
+"name: If errorp is\n"
+"\t\t                         true, an error is signaled; otherwise, nil is "
+"returned."
+msgstr ""
+
+#: ./en/appendix-b.md:344
+msgid ""
+"\t\tYou can use setf with find-class to change the class associated with "
+"this symbol."
+msgstr ""
+
+#: ./en/appendix-b.md:346
+msgctxt "./en/appendix-b.md:346"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:348
+msgid "\t\t      \"Mapping Between Names and Objects,\" page 134 "
+msgstr ""
+
+#: ./en/appendix-b.md:351
+msgid ""
+"**find-method** generic-function "
+"qualifiers                                            Generic Function\n"
+"\t\tspecializers &optional errorp "
+msgstr ""
+
+#: ./en/appendix-b.md:354
+msgid ""
+"\t\tReturns the method object identified by the generic function it "
+"implements, the method's\n"
+"\t\tqualifiers, and the parameter specializers."
+msgstr ""
+
+#: ./en/appendix-b.md:357
+msgid ""
+"\t\tgeneric-function           A generic function object, which can be "
+"obtained by using\n"
+"\t\t                           symbol-function."
+msgstr ""
+
+#: ./en/appendix-b.md:359
+msgid "\t\tqualifiers                 A list of the method's qualifiers."
+msgstr ""
+
+#: ./en/appendix-b.md:365
+msgid ""
+"\t\tparameter-specializers \n"
+"\t\t                           A list of the method's parameter specializer "
+"objects. This list\n"
+"\t\t\t\t\t   must contain one element corresponding to each required "
+"parameter.\n"
+"\t\t\t\t\t   For any unspecialized parameters, the class named t should be\n"
+"\t\t\t\t\t   given. "
+msgstr ""
+
+#: ./en/appendix-b.md:369
+msgid ""
+"\t\terrorp                     If errorp is t, CLOS signals an error if "
+"there is no such method.\n"
+"\t\t                           If errorp is nil, CLOS returns nil if there "
+"is no such method.\n"
+"\t\t\t\t\t   The default is t."
+msgstr ""
+
+#: ./en/appendix-b.md:371
+msgctxt "./en/appendix-b.md:371"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:374
+msgid ""
+"\t\t     \"Mapping Between Names and Objects,\" page 134 \n"
+"\t\t     \"Removing Generic Functions and Methods,\" page 136 "
+msgstr ""
+
+#: ./en/appendix-b.md:376
+msgid ""
+"**initialize-instance** instance &rest "
+"initargs                                           Generic Function"
+msgstr ""
+
+#: ./en/appendix-b.md:380
+msgid ""
+"\t\tInvoked automatically by the system when make-instance is called; "
+"initialize-instance\n"
+"\t\tshould not be called by users. You can specialize initialize-instance to "
+"control how new\n"
+"\t\tinstances are initialized. This generic function returns the instance."
+msgstr ""
+
+#: ./en/appendix-b.md:382
+msgid "\t\tinstance                   The newly created instance. "
+msgstr ""
+
+#: ./en/appendix-b.md:388
+msgid ""
+"\t\tinitargs                   Alternating initarg names and values. The "
+"valid initarg names\n"
+"\t\t                           include the slot-filling initarg names for "
+"the class (defined by\n"
+"\t\t\t\t\t   the :initarg option to defclass) and the names of keyword\n"
+"\t\t\t\t\t   parameters specified in methods for initialize-instance or\n"
+"\t\t\t\t\t   shared-initialize."
+msgstr ""
+
+#: ./en/appendix-b.md:394
+msgid ""
+"\t\tA system-supplied default primary method performs slot initialization by "
+"calling\n"
+"\t\tshared-initialize with the instance, t (indicating that all slots should "
+"be filled with the\n"
+"\t\tvalues of their initforms), and the initargs. In most cases, you should "
+"supply after-methods\n"
+"\t\tto allow the default primary method to run. This generic function uses "
+"the standard method\n"
+"\t\tcombination type."
+msgstr ""
+
+#: ./en/appendix-b.md:396
+msgctxt "./en/appendix-b.md:396"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:400
+msgid ""
+"\t\t     \"Creating and Initializing Instances,\" page 155 \n"
+"\t\t     \"Controlling Initialization with Methods,\" page 159 \n"
+"\t\t     \"A Procedural Definition: Initialization,\" page 165"
+msgstr ""
+
+#: ./en/appendix-b.md:402
+msgid ""
+"**make-instance** class &rest "
+"initargs                                                     Generic "
+"Function "
+msgstr ""
+
+#: ./en/appendix-b.md:406
+msgid ""
+"\t\tCreates a new instance of the specified class and initializes the slots "
+"of the new instance\n"
+"\t\tby calling the generic function initialize-instance with the newly "
+"created instance and\n"
+"\t\tinitargs. make-instance returns the initialized instance."
+msgstr ""
+
+#: ./en/appendix-b.md:408
+msgid "\t\tclass                       The name of a class or a class object. "
+msgstr ""
+
+#: ./en/appendix-b.md:414
+msgid ""
+"\t\tinitargs                    Alternating initarg names and values. The "
+"valid initarg names\n"
+"\t\t                            include the slot-filling initarg names for "
+"the class (defined by\n"
+"\t\t\t\t\t    the :initarg option to defclass) and the names of keyword\n"
+"\t\t\t\t\t    parameters specified in methods for make-instance,\n"
+"\t\t\t\t\t    initialize-instance, and shared-initialize. "
+msgstr ""
+
+#: ./en/appendix-b.md:416
+msgctxt "./en/appendix-b.md:416"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:424
+msgid ""
+"\t\t     \"Creating and Initializing Instances,\" page 155 \n"
+"\t\t     \"Summary of What make-instance Does,\" page 156 \n"
+"\t\t     \"Controlling Initialization with defclass Options,\" page 157 \n"
+"\t\t     \"Controlling Initialization with Methods,\" page 159 \n"
+"\t\t     \"Initialization Arguments,\" page 160 \n"
+"\t\t     \"Defining Tape Streams,\" page 186 \n"
+"\t\t     \"Defining Disk Streams,\" page 192"
+msgstr ""
+
+#: ./en/appendix-b.md:426
+msgid ""
+"**next-method-p**"
+"                                                                           "
+"Function"
+msgstr ""
+
+#: ./en/appendix-b.md:431
+msgid ""
+"\t\tCan be called within a method to find out whether there is a \"next "
+"method.\" This function\n"
+"\t\tis useful in methods where you expect to use call-next-method, and you "
+"want to ensure that\n"
+"\t\tthere is a next method to call. This function takes no arguments. It "
+"returns true if there\n"
+"\t\tis a next method, and nil if there is not."
+msgstr ""
+
+#: ./en/appendix-b.md:434
+msgid ""
+"\t\tThe method combination type defines what the \"next method\" is. The "
+"standard method\n"
+"\t\tcombination type defines the next method as follows:"
+msgstr ""
+
+#: ./en/appendix-b.md:436
+msgid ""
+"*  In an around-method, the \"next method\" is the next most specific around-"
+"method if there is one. Otherwise, the \"next method\" consists of the "
+"before-methods, the most specific primary method, and the after-methods."
+msgstr ""
+
+#: ./en/appendix-b.md:438
+msgid ""
+"*   In a primary method, the \"next method\" is the next most specific "
+"primary method."
+msgstr ""
+
+#: ./en/appendix-b.md:440
+msgctxt "./en/appendix-b.md:440"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:443
+msgid ""
+"\t\t      \"Around-Methods,\" page 102 \n"
+"\t\t      \"Calling a Shadowed Primary Method,\" page 105 "
+msgstr ""
+
+#: ./en/appendix-b.md:445
+msgid ""
+"**print-object** object stream "
+"Generic                                                        Function"
+msgstr ""
+
+#: ./en/appendix-b.md:450
+msgid ""
+"\t\tWrites the printed representation of an object to a stream. The purpose "
+"of print-object is\n"
+"\t\tto allow you to control the printing behavior of objects of a given "
+"class, by writing methods\n"
+"\t\tthat specialize print-object. CLOS provides a default primary method for "
+"print-object,\n"
+"\t\tprint-object uses the standard method combination type."
+msgstr ""
+
+#: ./en/appendix-b.md:454
+msgid ""
+"\t\tprint-object is called by the print system and should not be called by "
+"users. All Common\n"
+"\t\tLisp printing functions call print-object, including write, prinl, "
+"format -A and -S, and\n"
+"\t\tothers."
+msgstr ""
+
+#: ./en/appendix-b.md:456
+msgid "\t\tprint-object returns the object, its first argument."
+msgstr ""
+
+#: ./en/appendix-b.md:458
+msgid "\t\tobject                    Any object. "
+msgstr ""
+
+#: ./en/appendix-b.md:460
+msgid ""
+"\t\tstream                    This must be a real stream, and cannot be t or "
+"nil."
+msgstr ""
+
+#: ./en/appendix-b.md:464
+msgid ""
+"\t\tThe generic function print-object has a protocol that all methods should "
+"follow. Methods\n"
+"\t\tshould obey the print control special variables described in Steele's "
+"Common LISP: The\n"
+"\t\tLanguage. For more details on print-object, see the CLOS specification."
+msgstr ""
+
+#: ./en/appendix-b.md:466
+msgctxt "./en/appendix-b.md:466"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:469
+msgid ""
+"\t\t    \"Controlling How Locks Print,\" page 37 \n"
+"\t\t    \"Specializing print-object for Locks,\" page 38 "
+msgstr ""
+
+#: ./en/appendix-b.md:471
+msgid ""
+"**reinitialize-instance** instance &rest "
+"initargs                                           Generic Function"
+msgstr ""
+
+#: ./en/appendix-b.md:476
+msgid ""
+"\t\tReinitializes an instance according to the initargs. You can specialize "
+"reinitialize-instance\n"
+"\t\tto control how instances are reinitialized. This generic function is "
+"rarely used in\n"
+"\t\tapplication programs, but is used within the implementation of CLOS "
+"itself, in the metaobject\n"
+"\t\tprotocol. This generic function returns the instance."
+msgstr ""
+
+#: ./en/appendix-b.md:478
+msgid "\t\tinstance                   The instance to reinitialize."
+msgstr ""
+
+#: ./en/appendix-b.md:490
+msgid ""
+"\t\tinitargs                   Alternating initarg names and values. The "
+"valid initarg names\n"
+"\t\t                           include the slot-filling initarg names for "
+"the class (defined by\n"
+"\t\t\t\t\t   the :initarg option to defclass) and the names of keyword\n"
+"\t\t\t\t\t   parameters specified in methods for reinitialize-instance or\n"
+"\t\t\t\t\t   shared-initialize. A system-supplied default primary method\n"
+"\t\t\t\t\t   performs slot initialization by calling shared-initialize with\n"
+"\t\t\t\t\t   the instance, nil (indicating that no slots should be filled "
+"with\n"
+"\t\t\t\t\t   the values of their initforms), and the initargs. In most cases,"
+"\n"
+"\t\t\t\t\t   you should supply after-methods to allow the default primary\n"
+"\t\t\t\t\t   method to run. This generic function uses the standard method\n"
+"\t\t\t\t\t   combination type. "
+msgstr ""
+
+#: ./en/appendix-b.md:492
+msgctxt "./en/appendix-b.md:492"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:494
+msgid "\t\t     \"A Procedural Definition: Initialization,\" page 165 "
+msgstr ""
+
+#: ./en/appendix-b.md:496
+msgid ""
+"**remove-method** generic-function "
+"method                                                    Generic Function "
+msgstr ""
+
+#: ./en/appendix-b.md:498
+msgid ""
+"\t\tRemoves a method from a generic function and returns the modified "
+"generic function object."
+msgstr ""
+
+#: ./en/appendix-b.md:500
+msgid "\t\tgeneric-function           A generic function object. "
+msgstr ""
+
+#: ./en/appendix-b.md:502
+msgid "\t\tmethod                     A method object."
+msgstr ""
+
+#: ./en/appendix-b.md:504
+msgid ""
+"\t\tCLOS signals an error if the method is not one of the methods for the "
+"generic function."
+msgstr ""
+
+#: ./en/appendix-b.md:506
+msgctxt "./en/appendix-b.md:506"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:508
+msgid "\t\t      \"Removing Generic Functions and Methods,\" page 136"
+msgstr ""
+
+#: ./en/appendix-b.md:511
+msgid ""
+"**shared-initialize** instance slots-for- "
+"initform                                           Generic Function \n"
+"\t\t&rest initargs "
+msgstr ""
+
+#: ./en/appendix-b.md:519
+msgid ""
+"\t\tCalled in four contexts to initialize an instance: to initialize a new "
+"instance\n"
+"\t\t(initialize-instance), to reinitialize an instance (reinitialize-"
+"instance), to update an\n"
+"\t\tinstance to a new class redefinition (update-instance-for-redefined-"
+"class), and to update\n"
+"\t\tan instance to a different class (update-instance-for-different-class). "
+"The shared-initialize\n"
+"\t\tgeneric function should not be called by users. You can specialize "
+"shared-initialize to\n"
+"\t\tcontrol how instances are initialized in these four contexts. This "
+"generic function returns\n"
+"\t\tthe instance."
+msgstr ""
+
+#: ./en/appendix-b.md:521
+msgid "\t\tinstance                   The instance to initialize."
+msgstr ""
+
+#: ./en/appendix-b.md:525
+msgid ""
+"\t\tslots-for-initform         Indicates which slots should be filled with "
+"the values of their\n"
+"\t\t                           initforms (if they are still unbound). Either "
+"a list of slot\n"
+"\t\t\t\t\t   names, or t to indicate all slots, or nil to indicate no slots. "
+msgstr ""
+
+#: ./en/appendix-b.md:530
+msgid ""
+"\t\tinitargs                   Alternating initarg names and values. The "
+"valid initarg names\n"
+"\t\t                           include the slot-filling initarg names for "
+"the class (defined by\n"
+"\t\t\t\t\t   the :initarg option to defclass) and the names of keyword\n"
+"\t\t\t\t\t   parameters specified in methods for shared-initialize."
+msgstr ""
+
+#: ./en/appendix-b.md:536
+msgid ""
+"\t\tA system-supplied default primary method first initializes all slots for "
+"which a slot-filling\n"
+"\t\tinitarg is given. Then, for any slots indicated by the slots-for-"
+"initform argument that are\n"
+"\t\tstill unbound, the method fills those slots with the values of their "
+"initforms. In most\n"
+"\t\tcases, you should supply after-methods for shared-initialize, to allow "
+"the default primary\n"
+"\t\tmethod to run. This generic function uses the standard method "
+"combination type."
+msgstr ""
+
+#: ./en/appendix-b.md:538
+msgctxt "./en/appendix-b.md:538"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:541
+msgid ""
+"\t\t     \"A Procedural Definition: Initialization,\" page 165 \n"
+"\t\t     \"Creating and Initializing Instances,\" page 155 "
+msgstr ""
+
+#: ./en/appendix-b.md:543
+msgid ""
+"**slot-boundp** instance slot-"
+"name                                                              Function"
+msgstr ""
+
+#: ./en/appendix-b.md:545
+msgid ""
+"\t\tReturns true if the indicated slot of the instance is bound; otherwise, "
+"returns false. "
+msgstr ""
+
+#: ./en/appendix-b.md:547
+msgid "\t\tinstance                   An instance."
+msgstr ""
+
+#: ./en/appendix-b.md:549
+msgid "\t\tslot-name                  A symbol naming a slot of the instance."
+msgstr ""
+
+#: ./en/appendix-b.md:553
+msgid ""
+"\t\tThis generic function is useful in methods for print-object or describe, "
+"if you want to\n"
+"\t\tensure that the methods do not signal errors if slots are unbound. It "
+"can also be useful\n"
+"\t\tin methods that initialize instances."
+msgstr ""
+
+#: ./en/appendix-b.md:555
+msgctxt "./en/appendix-b.md:555"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:557
+msgid "\t\t      \"Specializing print-object for Locks,\" page 38"
+msgstr ""
+
+#: ./en/appendix-b.md:559
+msgid ""
+"**slot-value** object slot-"
+"name                                                                 "
+"Function "
+msgstr ""
+
+#: ./en/appendix-b.md:563
+msgid ""
+"\t\tReturns the value of the specified slot of the object. If there is no "
+"slot of that name,\n"
+"\t\tan error is signaled. You can use setf with slot-value to write a new "
+"value into the slot,\n"
+"\t\tslot-value is the primitive used to implement accessor methods."
+msgstr ""
+
+#: ./en/appendix-b.md:567
+msgid ""
+"\t\tobject                      A form evaluating to an object that has "
+"slots. Usually this is\n"
+"\t\t                            an instance of a user-defined class, since "
+"the structure of\n"
+"\t\t\t\t\t    these classes is in the form of slots. "
+msgstr ""
+
+#: ./en/appendix-b.md:569
+msgid "\t\tslot-name                   A symbol naming a slot. "
+msgstr ""
+
+#: ./en/appendix-b.md:571
+msgctxt "./en/appendix-b.md:571"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:573
+msgid "\t\t       \"Programming with Accessors,\" page 70 "
+msgstr ""
+
+#: ./en/appendix-b.md:576
+msgid ""
+"**update-instanee-for-different-elass**"
+"                                                    Generic Function \n"
+"\t\tprevious new &rest initargs "
+msgstr ""
+
+#: ./en/appendix-b.md:580
+msgid ""
+"Invoked automatically by the system when change-class is called; update-"
+"instance-for-different-class should\n"
+"not be called by users. You can specialize update-instance-for-different-"
+"class to control how instances are\n"
+"updated to the target class. Any value returned is ignored by the caller, "
+"change-class."
+msgstr ""
+
+#: ./en/appendix-b.md:582
+msgid ""
+"\t\tprevious                    A copy of the previous version of the "
+"instance."
+msgstr ""
+
+#: ./en/appendix-b.md:584
+msgid "\t\tnew                         The new version of the instance."
+msgstr ""
+
+#: ./en/appendix-b.md:590
+msgid ""
+"\t\tinitargs                    Alternating initarg names and values. The "
+"valid initarg names\n"
+"\t\t                            include the slot-filling initarg names for "
+"the class (defined\n"
+"\t\t\t\t\t    by the :initarg option to defclass) and the names of keyword\n"
+"\t\t\t\t\t    parameters specified in methods for\n"
+"\t\t\t\t\t    update-instance-for-different-class or shared-initialize."
+msgstr ""
+
+#: ./en/appendix-b.md:592
+msgid ""
+"A system-supplied default primary method performs slot initialization by "
+"calling shared-initialize with the instance, a list of the names of the "
+"added local slots (indicating that they should be filled with the values of "
+"their initforms), and the initargs. In most cases, you should supply after-"
+"methods to allow the default primary method to run. This generic function "
+"uses the standard method combination type. The caller of change-class "
+"arranges the arguments such that a copy of the previous version is "
+"accessible, as well as the new version of the instance. This allows methods "
+"to access information stored in the previous version and to use that "
+"information to update the new version of the instance. Any value returned is "
+"ignored by its caller."
+msgstr ""
+
+#: ./en/appendix-b.md:594
+msgctxt "./en/appendix-b.md:594"
+msgid "\t\tFor related information, see"
+msgstr ""
+
+#: ./en/appendix-b.md:597
+msgid ""
+"\t\t     \"Changing the Class of an Instance,\" page 151 \n"
+"\t\t     \"A Procedural Definition: Initialization,\" page 165 "
+msgstr ""
+
+#: ./en/appendix-b.md:601
+msgid ""
+"**update-instance-for-redeflned-class** "
+"instance                                        Generic Function \n"
+"             added-slots discarded-slots plist \n"
+"             &rest initargs "
+msgstr ""
+
+#: ./en/appendix-b.md:603
+msgid ""
+"Invoked automatically by the system when a class is redefined; update-"
+"instance-for-redefined-class should not be called by users. You can "
+"specialize update-instance-for-redefined-class to control how instances are "
+"updated to the new version. Any value returned is ignored by the caller."
+msgstr ""
+
+#: ./en/appendix-b.md:605
+msgid ""
+"The caller of update-instance-for-redef ined-class provides the arguments "
+"added-slots, discarded-slots, and plist to be used by methods. These "
+"arguments allow methods for update-instance-for-redefined-class to access "
+"information stored in the previous version and to use that information to "
+"update the new version of the instance."
+msgstr ""
+
+#: ./en/appendix-b.md:607
+msgid ""
+"\t\tinstance                    The instance after its structure has been "
+"updated."
+msgstr ""
+
+#: ./en/appendix-b.md:609
+msgid ""
+"\t\tadded-slots                 A list of slots that were added to the "
+"instance."
+msgstr ""
+
+#: ./en/appendix-b.md:614
+msgid ""
+"\t\tdiscarded-slots             A list of slots whose values are being "
+"discarded. This includes\n"
+"\t\t                            any slots specified in the old class "
+"definition but not in the\n"
+"\t\t\t\t\t    new one, and any slots specified as local in the old "
+"definition\n"
+"\t\t\t\t\t    and shared in the new one."
+msgstr ""
+
+#: ./en/appendix-b.md:618
+msgid ""
+"\t\tplist                       A list of alternating slot names and values. "
+"Each discarded slot\n"
+"\t\t                            with a value appears in the plist. No "
+"unbound slots appear in the\n"
+"\t\t\t\t\t    plist."
+msgstr ""
+
+#: ./en/appendix-b.md:624
+msgid ""
+"\t\tinitargs                    Alternating initarg names and values. The "
+"valid initarg names\n"
+"\t\t                            include the slot-filling initarg names for "
+"the class (defined by\n"
+"\t\t\t\t\t    the :initarg option to defclass) and the names of keyword\n"
+"\t\t\t\t\t    parameters specified in methods for\n"
+"\t\t\t\t\t    update-instance-for-redefined-class or shared-initialize."
+msgstr ""
+
+#: ./en/appendix-b.md:626
+msgid ""
+"A system-supplied default primary method performs slot initialization by "
+"calling shared-initialize with the instance, added-slots (indicating that "
+"all added local slots should be filled with the values oftheir initforms), "
+"and the initargs. In most cases, you should supply after-methods to allow "
+"the default primary method to run. This generic function uses the standard "
+"method combination type."
+msgstr ""
+
+#: ./en/appendix-b.md:628
+msgctxt "./en/appendix-b.md:628"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:632
+msgid ""
+"\t\t      \"Redefining Classes,\" page 140 \n"
+"\t\t      \"Example of Redefining CLOS Elements,\" page 144 \n"
+"\t\t      \"A Procedural Definition: Initialization,\" page 165"
+msgstr ""
+
+#: ./en/appendix-b.md:634
+msgid ""
+"**with-accessors** ({accessor-entry)*) instance-form sbody "
+"body                                   Macro "
+msgstr ""
+
+#: ./en/appendix-b.md:638
+msgid ""
+"\t\tCreates a lexical context for referring to accessors by variables. This "
+"is a convenient\n"
+"\t\tshorthand for calling reader or writer generic functions, with-accessors "
+"returns the values\n"
+"\t\tof the last form in the body. "
+msgstr ""
+
+#: ./en/appendix-b.md:640
+msgid "\t\tinstance-form               A form that evaluates to an instance. "
+msgstr ""
+
+#: ./en/appendix-b.md:642
+msgid ""
+"\t\taccessor-entry              A list of the form (variable-name accessor-"
+"name). "
+msgstr ""
+
+#: ./en/appendix-b.md:645
+msgid ""
+"\t\tWithin the body of with-accessors you can use setf or setq with the "
+"variable to call the\n"
+"\t\twriter generic function. "
+msgstr ""
+
+#: ./en/appendix-b.md:647
+msgctxt "./en/appendix-b.md:647"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:650
+msgctxt "./en/appendix-b.md:650"
+msgid ""
+"\t\t      \"Programming with Accessors,\" page 70 \n"
+"\t\t      \"Using with-accessors and with-slots,\" page 73"
+msgstr ""
+
+#: ./en/appendix-b.md:652
+msgid ""
+"**with-slots** ([slot-entry]*) instance-form sbody "
+"body                                            Macro "
+msgstr ""
+
+#: ./en/appendix-b.md:655
+msgid ""
+"\t\tCreates a lexical context for referring to slots by variables. This is a "
+"convenient\n"
+"\t\tshorthand for calling slot-value, with-slots returns the values of the "
+"last form in the body."
+msgstr ""
+
+#: ./en/appendix-b.md:657
+msgid "\t\tinstance-form              A form that evaluates to an instance. "
+msgstr ""
+
+#: ./en/appendix-b.md:663
+msgid ""
+"\t\tslot-entry                 Either a slot name alone or a list (variable-"
+"name slot-name).\n"
+"\t\t                           If the slot name is given alone, you can "
+"access the slot by a\n"
+"\t\t\t\t\t   variable with the same name as the slot. The alternate syntax\n"
+"\t\t\t\t\t   allows you to specify a different variable name for accessing\n"
+"\t\t\t\t\t   the slot."
+msgstr ""
+
+#: ./en/appendix-b.md:666
+msgid ""
+"\t\tWithin the body of with-slots you can use setf or setq with the variable "
+"to write a value\n"
+"\t\tinto the slot."
+msgstr ""
+
+#: ./en/appendix-b.md:668
+msgctxt "./en/appendix-b.md:668"
+msgid "\t\tFor related information, see "
+msgstr ""
+
+#: ./en/appendix-b.md:671
+msgctxt "./en/appendix-b.md:671"
+msgid ""
+"\t\t      \"Programming with Accessors,\" page 70 \n"
+"\t\t      \"Using with-accessors and with-slots,\" page 73"
+msgstr ""

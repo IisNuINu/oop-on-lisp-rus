@@ -1,0 +1,266 @@
+#. extracted from ./en/appendix-c.md
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-09-24 17:39+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Translate Toolkit 3.7.2\n"
+
+#: ./en/appendix-c.md:3
+msgid ""
+"#  Appendix C \n"
+"#  CLOS Operators Not Documented in This Book"
+msgstr ""
+
+#: ./en/appendix-c.md:5
+msgid ""
+"This appendix briefly mentions the CLOS operators that are not covered in "
+"this book."
+msgstr ""
+
+#: ./en/appendix-c.md:7
+msgid "### Generic Functions with Local Names or No Names"
+msgstr ""
+
+#: ./en/appendix-c.md:9
+msgid ""
+"CLOS enables you to define generic functions whose names are local in much "
+"the same way that Common Lisp enables you to define ordinary functions whose "
+"names are local. You can also define a generic function with no name; this "
+"is analogous to defining an ordinary Lisp function with no name."
+msgstr ""
+
+#: ./en/appendix-c.md:11
+msgid "**generic-flet special form**"
+msgstr ""
+
+#: ./en/appendix-c.md:13
+msgid ""
+"\t\tDefines new generic functions and methods; the scoping is like flet."
+msgstr ""
+
+#: ./en/appendix-c.md:15
+msgid "**generic-labels special form** "
+msgstr ""
+
+#: ./en/appendix-c.md:17
+msgid ""
+"\t\tDefines new generic functions and methods; the scoping is like labels."
+msgstr ""
+
+#: ./en/appendix-c.md:19
+msgid "**with-added-methods special form** "
+msgstr ""
+
+#: ./en/appendix-c.md:22
+msgid ""
+"\t\tDefines new generic functions and methods; the names are scoped within "
+"the lexical context\n"
+"\t\tof the body. This is an extension to generic-labels."
+msgstr ""
+
+#: ./en/appendix-c.md:24
+msgid "**generic-function macro** "
+msgstr ""
+
+#: ./en/appendix-c.md:26
+msgid "\t\tDefines an anonymous generic function and methods for it."
+msgstr ""
+
+#: ./en/appendix-c.md:28
+msgid "###   Generic Functions Called in Error Situations "
+msgstr ""
+
+#: ./en/appendix-c.md:30
+msgid ""
+"These generic functions are not intended to be called by users; they are "
+"called when errors are encountered. These generic functions are exception "
+"handlers. The default method signals an error, but you can specialize the "
+"generic function to do something different."
+msgstr ""
+
+#: ./en/appendix-c.md:32
+msgid "**slot-unbound generic function** "
+msgstr ""
+
+#: ./en/appendix-c.md:34
+msgid "\t\tCalled when an attempt is made to read an unbound slot."
+msgstr ""
+
+#: ./en/appendix-c.md:36
+msgid "**slot-missing generic function** "
+msgstr ""
+
+#: ./en/appendix-c.md:39
+msgid ""
+"\t\tCalled when an attempt is made to access a slot of an instance, but "
+"there is no slot by\n"
+"\t\tthat name accessible to the instance."
+msgstr ""
+
+#: ./en/appendix-c.md:41
+msgid "**no-applicable-method generic function** "
+msgstr ""
+
+#: ./en/appendix-c.md:43
+msgid ""
+"\t\tCalled when a generic function is called and there is no applicable "
+"method for it."
+msgstr ""
+
+#: ./en/appendix-c.md:45
+msgid "**no-next-method generic function**"
+msgstr ""
+
+#: ./en/appendix-c.md:47
+msgid ""
+"\t\tCalled when call-next-method is used and there is no \"next method.\""
+msgstr ""
+
+#: ./en/appendix-c.md:49
+msgid "###  Tools for Defining Method Combination Types"
+msgstr ""
+
+#: ./en/appendix-c.md:51
+msgid ""
+"The long form of define-method-combination offers a rich syntax for defining "
+"new method combination types. The other operators mentioned here are used "
+"within the body of define-method-combination."
+msgstr ""
+
+#: ./en/appendix-c.md:53
+msgid "**define-method-combination macro** "
+msgstr ""
+
+#: ./en/appendix-c.md:55
+msgid "\t\tDefines a new method combination type. "
+msgstr ""
+
+#: ./en/appendix-c.md:57
+msgid "**call-method macro** "
+msgstr ""
+
+#: ./en/appendix-c.md:59
+msgid ""
+"\t\tIn the framework of a method combination type, indicates that a method "
+"should be called."
+msgstr ""
+
+#: ./en/appendix-c.md:61
+msgid "**method-qualifiers generic function** "
+msgstr ""
+
+#: ./en/appendix-c.md:63
+msgid "\t\tReturns a list of the qualifiers of a method. "
+msgstr ""
+
+#: ./en/appendix-c.md:65
+msgid "**method-combination-error function** "
+msgstr ""
+
+#: ./en/appendix-c.md:67
+msgid "\t\tSignals an error encountered in the method combination process."
+msgstr ""
+
+#: ./en/appendix-c.md:69
+msgid "**invalid-method-error function** "
+msgstr ""
+
+#: ./en/appendix-c.md:72
+msgid ""
+"\t\tSignals an error when an applicable method has method qualifiers that "
+"are not recognized\n"
+"\t\tby the method combination type."
+msgstr ""
+
+#: ./en/appendix-c.md:74
+msgid "### Miscellaneous Operators"
+msgstr ""
+
+#: ./en/appendix-c.md:76
+msgid "**add-method generic function** "
+msgstr ""
+
+#: ./en/appendix-c.md:79
+msgid ""
+"\t\tAdds a method object to a generic function; this function level operator "
+"implements\n"
+"\t\tdefmethod and other macros that create methods for generic functions."
+msgstr ""
+
+#: ./en/appendix-c.md:81
+msgid "**documentation generic function** "
+msgstr ""
+
+#: ./en/appendix-c.md:83
+msgid ""
+"\t\tRetrieves the documentation string of various kinds of Lisp objects."
+msgstr ""
+
+#: ./en/appendix-c.md:85
+msgid "**ensure-generic-function function** "
+msgstr ""
+
+#: ./en/appendix-c.md:88
+msgid ""
+"\t\tDefines a generic function object; this function level operator "
+"implements defgeneric and\n"
+"\t\tother macros that create generic functions."
+msgstr ""
+
+#: ./en/appendix-c.md:90
+msgid "**function-keywords** "
+msgstr ""
+
+#: ./en/appendix-c.md:92
+msgid "\t\tReturns the keyword parameters of a given method."
+msgstr ""
+
+#: ./en/appendix-c.md:94
+msgid "**make-instances-obsolete generic function** "
+msgstr ""
+
+#: ./en/appendix-c.md:98
+msgid ""
+"\t\tCalled by the system when a class is redefined to trigger the updating "
+"process. Users can\n"
+"\t\tcall make-instances-obsolete to cause the update-instance-for-redefined-"
+"class generic\n"
+"\t\tfunction to be called for instances of a given class (and for instances "
+"of subclasses)."
+msgstr ""
+
+#: ./en/appendix-c.md:100
+msgid "**slot-makunbound function** "
+msgstr ""
+
+#: ./en/appendix-c.md:102
+msgid "\t\tMakes a slot of an instance unbound."
+msgstr ""
+
+#: ./en/appendix-c.md:104
+msgid "**slot-exists-p function** "
+msgstr ""
+
+#: ./en/appendix-c.md:106
+msgid "\t\tTests whether an instance has a slot of a given name. "
+msgstr ""
+
+#: ./en/appendix-c.md:108
+msgid "**symbol-macrolet macro** "
+msgstr ""
+
+#: ./en/appendix-c.md:110
+msgid ""
+"\t\tAssociates forms with variables within its body; using such a variable "
+"causes the form to\n"
+"\t\tbe executed. This macro implements the with-accessors and with-slots "
+"macros. "
+msgstr ""

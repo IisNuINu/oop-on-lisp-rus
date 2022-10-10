@@ -1,0 +1,1421 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<META http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head> 
+
+<body bgcolor="white" text="black">
+<h1>Разработка продвинутой программы CLOS: Потоки</h1>
+
+<p>Эта глава иллюстрирует объектно-ориентированную основу для реализации потоков Common Lisp, поведение которых указано в книге Стила Common LISP: The Language. Потоки естественным образом вписываются в объектно-ориентированную модель. Множество разновидностей связанных потоков можно смоделировать с помощью множественного наследования.</p>
+
+<p>Этот пример значительно сложнее, чем другие примеры в этой книге. Наша цель - продемонстрировать, как атаковать проблему большого размера, используя методы CLOS для разбиения проблемы на управляемые модули. Проект stream foundation(основа потоков) определяет ответственность каждого модуля. Реализация состоит из самих модулей, которые являются классами, обобщенными функциями и методами. Разработка/проектирование — это сложная часть, но если все сделано правильно, реализация должна быть относительно простой. (Вы заметите, что реализация одного из модулей — disk streams — на самом деле довольно сложна, но сложность связана с обработкой самого дискового устройства, что было бы необходимо независимо от проектирования потоков.)</p>
+
+<p>Мы начнем с краткого описания того, что такое потоки(streams) Common Lisp и как они создаются и используются. Затем мы описываем наш общий проект и показываем части реализации, которые иллюстрируют CLOS и объектно-ориентированный стиль. Этот пример создает основу для потоков и иллюстрирует, как несколько знакомых потоковых функций Common Lisp могут быть написаны для использования этой основы. Например, мы показываем, как read-char, write-char, read-byte и write-byte могут быть записаны с использованием этой основы, но мы опускаем определения других функций, таких как read-line и write-line.</p>
+
+<p>Внешний интерфейс определяется Common LISP: Язык, в следующих главах и разделах:</p>
+
+<pre><code>&gt; Глава 21          Потоки(Streams)
+&gt; Раздел 22.2   Функции ввода
+&gt; Раздел 22.3   Функции вывода
+&gt; Раздел 23.2   Открытие и закрытие файлов
+</code></pre>
+
+<p>Этот пример не предназначен для реальной реализации потоков; это тема, которая могла бы заполнить целую книгу. По большей части мы игнорируем соображения эффективности. Потокам необходим доступ к устройствам для ввода-вывода, поэтому мы предполагаем (и документируем) набор низкоуровневых примитивов для ленточного и дискового ввода-вывода, которые мы вызываем в методах. Эти примитивы являются упрощенными версиями того, что могло бы существовать в реальной системе ввода-вывода. Мы не включаем код Lisp для реализации этих примитивов, потому что он был бы зависимым от устройства, длинным и сложным и, вероятно, не имеет отношения к объектно-ориентированному программированию.</p>
+
+<p>Ценность этого примера заключается в методах декомпозиции существенной проблемы на отдельные функциональные компоненты и определения протокола для взаимодействия между этими компонентами. Детали тела метода менее важны, чем общая модульность. По мере чтения мы рекомендуем вам сосредоточиться на том, как части сочетаются друг с другом, вместо того, чтобы увязать в деталях какой-либо одной части.</p>
+
+<h2>11.1 ОБЗОР ПОТОКОВ(STREAMS)</h2>
+
+<p>Первым шагом в проектировании и разработке объектно-ориентированной программы является понимание проблемы, которую вы пытаетесь решить. Мы начнем с описания всех типов объектов, которые нам нужно смоделировать, и операций над объектами. С помощью этой информации мы сможем спроектировать организацию классов.</p>
+
+<p>Потоки Common Lisp используются для передачи данных от источника к месту назначения. Например, когда вы используете текстовый редактор и даете редактору команду сохранить содержимое буфера в файл, для передачи данных используется поток.</p>
+
+<h3>Типы потоков</h3>
+
+<p>Существуют различные типы потоков, которые используются для разных целей. Следующие типы потоков связаны с направлением потока данных:</p>
+
+<pre><code>    &gt; input stream(входной поток)    Переносит данные из внешнего источника в Lisp.
+    &gt;                                  Примером является поток, к которому привязан *standard-input*.
+
+
+    &gt; output stream(выходной поток)  Отправляет данные из Lisp во внешний адресат. Примером может служить поток        &gt;                                к которому привязан *стандартный вывод*.
+
+    &gt; bidirectional stream           передает данные как во входном, так и в выходном направлениях. Примером
+    &gt;                                        (двунаправленный поток)        может служить поток, к которому привязан 
+    &gt;                                        *query-io*.
+</code></pre>
+
+<p>Следующие типы потоков связаны с типом передаваемых данных, который является типом элемента потока:</p>
+
+<pre><code>    &gt; character stream          (поток символьных знаков) Передает символьные знаки
+
+    &gt; byte stream               (поток байтов)  Передает двоичные байты данных, где "байт" - это целое число с
+    &gt;                                 указанным количеством битов
+</code></pre>
+
+<p>Потоки имеют два конца; они соединяют две вещи. Один конец подключен к Lisp, а другой конец подключен к какому-то устройству. Входной поток переносит данные с устройства в Lisp, в то время как выходной поток отправляет данные из Lisp на устройство.</p>
+
+<p>Устройством может быть диск, магнитная лента, сеть, терминал или какое-либо другое устройство. В этом примере мы поддерживаем дисковые устройства и устройства с магнитной лентой. Следующие типы потоков связаны с устройством, подключенным к потоку:</p>
+
+<pre><code>    &gt; disk stream                (дисковый поток) Передает данные на дисковое устройство и с него
+
+    &gt; tape stream                (поток ленты) Передает данные на устройство с магнитной лентой и с него
+</code></pre>
+
+<p>Когда вы используете поток, этот поток имеет три аспекта: направление, тип элемента и тип устройства. Например, при сохранении содержимого буфера редактора в файл на диске вы используете поток, который одновременно является потоком символьных знаков(литералов), выходным потоком и дисковым потоком.</p>
+
+<p>Common Lisp определяет понятие направленных потоков; предикаты input-stream-p, output-stream-p и bidirectional-stream-p используются для определения направления потока. Common Lisp также определяет понятие потоков типа элемента, предоставляя функцию stream-element-type для запроса потока по его типу элемента. Потоки устройств не являются концепцией Common Lisp; они относятся к нашему проекту основания потока(stream foundation).</p>
+
+<h3>Тип Потока Определяет Его Операции</h3>
+
+<p>Тип потока определяет, какие операции могут быть выполнены в этом потоке. Выходной поток поддерживает такие операции, как force-output и finish-output. Поток ввода символьных знаков поддерживает read-char; поток вывода символьных знаков поддерживает write-char. Двунаправленный поток символьных знаков(character bidirectional) поддерживает как операции ввода, так и вывода символов. Аналогично, входной поток байтов поддерживает read-byte; выходной поток байтов поддерживает write-byte; и двунаправленный поток байтов поддерживает как read-byte, так и write-byte.</p>
+
+<p>Тип устройства потока также определяет операции, которые могут быть выполнены в потоке. В этом примере устройство с магнитной лентой поддерживает последовательный доступ, а дисковое устройство поддерживает как последовательный, так и произвольный доступ. Поскольку мы имеем больший контроль при использовании дискового устройства, дисковые потоки обладают большими возможностями, чем ленточные(tape) потоки, которые ограничены последовательными операциями.</p>
+
+<h3>Создание и использование потоков</h3>
+
+<p>Один из способов создать поток - это открыть файл. Функция open возвращает поток, подключенный к указанному файлу. Аргументы для открытия управляют типом потока. Например, чтобы создать поток вывода символьных знаков   (с целью передачи символьных знаков в файл), вы могли бы оценить эту форму с соответствующим аргументом filename:</p>
+
+<pre>
+(open filename :direction :output :element-type 'character) 
+</pre>
+
+<p>Тип устройства файлового потока извлекается из аргумента filename. Если имя файла указывает на дисковое устройство, поток будет дисковым потоком. Когда вы закончите использовать файл, вы можете закрыть поток. Никакие операции ввода или вывода не разрешены в закрытом потоке.</p>
+
+<pre>
+(close filename) 
+</pre>
+
+<p>Когда вы используете open, вы создаете файловый поток. Файловый поток поддерживает операции с файлами, такие как удаление и переименование. Наше основание потока(stream foundation) обеспечивает поддержку файловых потоков более низкого уровня; файловые потоки могут быть построены на этом фундаменте.</p>
+
+<h2>11.2 ПРОЕКТИРОВАНИЕ НАШЕГО ОСНОВАНИЯ ПОТОКА(STREAM FOUNDATION)</h2>
+
+<p>У нас есть следующие цели в области проектирования:</p>
+
+<ul>
+<li>Организовать набор классов потоков таким образом, чтобы точно отражать взаимосвязи между различными типами потоков.</li>
+<li>Для выделения общего поведения в отдельные модули, которые могут использоваться в нескольких контекстах. Другими словами, мы определим набор классов, каждый из которых имеет методы, поддерживающие четко определенный аспект поведения потока. Мы хотим разделять(сделать общим) код, который является общим для нескольких классов, чтобы избежать дублирования кода и сделать программу в целом меньше, проще и удобнее в обслуживании.</li>
+<li>Планировать расширение нашего основания(foundation). Мы определим внутренний протокол, будем использовать его в нашей реализации и задокументируем для использования другими программистами.</li>
+</ul>
+
+<h3>Организация потоковых классов</h3>
+
+<p>Для достижения заявленных целей мы определяем эти группы классов:</p>
+
+<ul>
+<li>Основа всех потоков: stream(поток)</li>
+<li>Направленные потоки, включая input-stream(входящий), output-stream(исходящий), bidirectional-stream(двунаправленный)</li>
+<li>Потоки типов элементов, включая character-stream(поток символьных знаков), byte-stream(байтовый поток)</li>
+<li>Потоки устройств, включая disk-stream(дисковый поток), tape-stream(ленточный поток)</li>
+</ul>
+
+<p>Наш проект эффективно определяет поток как "объект, построенный на классе stream". Таким образом, клиенты могут узнать, является ли объект потоком, используя typep, а также используя streamp. Следующие две формы эквивалентны:</p>
+
+<pre>
+(typep object 'stream) 
+(streamp object) 
+</pre>
+
+<p>Каждый из этих классов представляет собой строительный блок, предназначенный для обработки только одного аспекта потока. Полный поток состоит из строительных блоков, которые определяют направление, тип элемента и устройство. Одним из примеров полного потока является character-disk-input-stream: этот класс наследуется от character-stream, disk-stream, input-stream и stream.</p>
+
+<p>Потоки устройства манипулируют элементами данных, не зная, являются ли эти элементы символьными знаками(characters) или байтами. Каждый поток с типом элемента манипулирует данными со знанием типа данных, но без знания различных устройств. Мы хотим изолировать операции, относящиеся к конкретному устройству, в области потоков устройств и изолировать все операции, относящиеся к конкретному типу данных, в потоках с типом элементов.</p>
+
+<p>Такой проект позволяет клиентам легко расширять нашу потоковую программу. Чтобы добавить поддержку нового типа элемента, клиенту необходимо предоставить методы только для обобщенных функций, специфичных для типа элемента потока. Поток с новым типом элементов немедленно работает со всеми типами устройств, поддерживающих внутренний протокол. Аналогично, внедрение нового устройства требует добавления методов для обобщенных функций, специфичных для конкретного устройства, и новое устройство сразу же будет работать со всеми типами элементов.</p>
+
+<p>Существует три основных направленных типа потоков, каждый из которых построен на потоке: input-stream(входящий поток), output-stream(выходной поток) и bidirectional-stream(двунаправленный поток). Как показано на рис. 11.1, двунаправленный поток построен как на входящем потоке, так и на выходном потоке.</p>
+
+<p><img src="images/f11-01.jpg " alt="Рисунок 11.1: Классы направленного потока." /><strong>Рисунок 11.1: Классы направленного потока.</strong></p>
+
+<p>Эта закономерность отражена и в других группах классов. На рисунке 11.2 показана организация классов символьных знаков.</p>
+
+<p>Хотя это и не показано на этих рисунках, каждый из классов потока символьных знаков построен на классе направленного потока. То есть character-stream(поток символьных знаков) строится на stream(потоке), character-input-stream(входящий поток символьных знаков) строится на input-stream(входящем потоке) и так далее.</p>
+
+<p><img src="images/f11-02.jpg " alt="Рисунок 11.2: Классы потока символьных знаков." /><strong>Рисунок 11.2: Классы потока символьных знаков.</strong></p>
+
+<p>Классы потока устройств следуют тому же шаблону. Например, мы определим следующие классы для дискового устройства: disk-stream, disk-input-stream, disk-output-stream и disk-bidirectional-stream.</p>
+
+<h3>Внешний Протокол потока</h3>
+
+<p>Внешний протокол потоков указан в Common LISP: The Language. В этом примере мы реализуем следующее подмножество потоковых операций Common Lisp:</p>
+
+<table>
+<thead>
+<tr>
+  <th>Тип потока</th>
+  <th>Операции</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>all streams</td>
+  <td>input-stream-p, output-stream-p,</td>
+</tr>
+<tr>
+  <td></td>
+  <td>close, stream-element-type</td>
+</tr>
+<tr>
+  <td>output</td>
+  <td>force-output, finish-output</td>
+</tr>
+<tr>
+  <td>byte input</td>
+  <td>read-byte</td>
+</tr>
+<tr>
+  <td>byte output</td>
+  <td>write-byte</td>
+</tr>
+<tr>
+  <td>byte bidirectional</td>
+  <td>read-byte, write-byte</td>
+</tr>
+<tr>
+  <td>character input</td>
+  <td>read-char</td>
+</tr>
+<tr>
+  <td>character output</td>
+  <td>write-char</td>
+</tr>
+<tr>
+  <td>character bidirectional</td>
+  <td>read-char, write-char</td>
+</tr>
+<tr>
+  <td>disk</td>
+  <td>set-position</td>
+</tr>
+</tbody>
+</table>
+
+<p>Функция set-position является расширением Common Lisp для дисковых потоков. Мы документируем контракт на установку позиции здесь:</p>
+
+<pre><code>    &gt; set-position stream new-position &amp;optional eof-error-p eof-value 
+    &gt;                 Устанавливает текущее положение в нужное положение элемента. Позиция элемента - это
+    &gt;                 номер элемента в файле, где первый элемент имеет номер 0, следующий - 1 и так далее.
+    &gt;                 Если новая позиция находится за пределами конца файла, eof-error-p и eof-value определяют,
+    &gt;                 возвращается ли ошибка или значение; в противном случае возвращается новая позиция.
+</code></pre>
+
+<p>Мы обсудим, как создаются и открываются потоки позже, в разделе "Процедурное определение для создания потоков", стр. 207.</p>
+
+<h3>Внутренний Протокол Потока</h3>
+
+<h3>Протокол внутреннего потока</h3>
+
+<pre><code>    &gt;  bytes-per-element stream 
+    &gt;              Поддерживается всеми потоками типов элементов. Возвращает количество восьмиразрядных
+    &gt;              байт, необходимых для хранения одного элемента этого типа данных. Это должно быть
+    &gt;              положительное целое число.
+
+    &gt;  storage-unit-size stream 
+    &gt;             Поддерживается всеми потоками устройств. Возвращает размер единицы, обычно считываемой
+    &gt;             или записываемой этим устройством, выраженный в восьмибитных байтах. Для дискового потока
+    &gt;             это размер сектора диска. Для ленточного потока это размер записи на магнитной ленте.
+
+    &gt;  make-element-array stream 
+    &gt;              Поддерживается всеми потоками. Создает массив, который будет служить буфером для ввода
+    &gt;              или вывода.
+    &gt;              Размер массива соответствует устройству (обратите внимание, что примитивы устройств 
+    &gt;              низкого уровня читают и записывают блоками фиксированного размера) и типу элемента,
+    &gt;              соответствующему потоку. Это может быть реализовано с точки зрения размера единицы
+    &gt;              хранения(storage-unit-size), типа элемента потока(stream-element-type) и байтов на элемент
+    &gt;              (bytes-per-element).
+
+    &gt;  ensure-open-stream stream 
+    &gt;             Поддерживается всеми потоками. Проверяет, открыт ли поток, прежде чем разрешить к нему
+    &gt;             доступ. Сигнализирует об ошибке, если предпринята попытка получить доступ к закрытому потоку.
+
+    &gt;  read-next-element input-stream 
+    &gt;             Поддерживается всеми входными потоками устройств. Использует низкоуровневые примитивы
+    &gt;             устройств для чтения одного элемента данных. Возвращает второе значение, которое равно t,
+    &gt;             если был достигнут конец файла, в противном случае nil.
+
+    &gt;  write-next-element output-stream 
+    &gt;            Поддерживается всеми выходными потоками устройства. Использует низкоуровневые примитивы
+    &gt;            устройств для записи одного элемента данных.
+
+    &gt;  force-output-internal output-stream 
+    &gt;              Поддерживается всеми выходными потоками. Выполняет работу по принудительному выводу.
+
+    &gt;  finish-output-internal output-stream 
+    &gt;            Поддерживается всеми выходными потоками. Выполняет работу по завершению вывода.
+</code></pre>
+
+<h3>11.3 ЭКСПЕРИМЕНТИРУЕМ С ПРИМЕРОМ ПОТОКА</h3>
+
+<p>Если вы собираетесь опробовать код в этом примере, имейте в виду, что мы переопределяем несколько важных функций Common Lisp, которые работают с потоками. Вы можете определить пакет с целью тестирования этого примера и указать, что определенные символы Common Lisp должны быть затенены. Это позволяет вам сохранить предыдущие определения потоковых функций, что необходимо для того, чтобы ваш Lisp можно было использовать. (Если бы в Common Lisp было указано, что потоковые функции являются обобщенными, не было бы необходимости скрывать существующие определения; вы могли бы просто добавить методы к существующим обобщенным функциям.)</p>
+
+<pre>
+(setq *clos-streams-package* 
+      (make-package 'clos-streams :nicknames '("cs") 
+                                  :use 'lisp))
+
+(shadow '(input-stream-p output-stream-p 
+          force-output finish-output 
+          close stream-element-type 
+          read-char write-char 
+          read-byte write-byte) 
+        'clos-streams) 
+</pre>
+
+<p>Вы заметите, что мы объявляем возвращаемые значения обобщенных функций в нескольких формах defgeneric. Это удобный способ документировать часть контракта обобщенной функции — ожидаемые возвращаемые значения. Хотя Common Lisp не определяет значения в качестве признанного спецификатора объявления, мы можем сделать его таковым, объявив значения в качестве объявления следующим образом:</p>
+
+<pre>
+(proclaim ' (declaration values)) 
+</pre>
+
+<p>Если бы мы пренебрегли объявлением значений в качестве объявления, компилятор, вероятно, выдал бы предупреждение о том, что объявление не поддерживается.</p>
+
+<h2>11.4 НАПРАВЛЕННЫЕ ПОТОКИ</h2>
+
+<p>Здесь мы определяем классы stream, input-stream, output-stream и bidirectional-stream. Мы также определяем методы, которые предоставляет каждый из этих классов. Затем мы упомянем аспекты этого кода, которые представляют особый интерес.</p>
+
+<p>Стиль этой программы группирует методы и обобщенные функции в соответствии с определениями классов. Например, в разделе определение класса stream вы найдете определения для обобщенных функций, которые поддерживаются всеми потоками. Все методы, предоставляемые классом, находятся в определении класса. Мы также отделяем внешний интерфейс от внутреннего интерфейса с помощью комментариев в коде.</p>
+
+<p>Этот стиль хорошо подходит для данного конкретного примера; другой программе может быть полезен другой стиль. Программа, которая сильно зависит от нескольких методов, не может группировать методы таким образом, потому что мультиметод присоединен к более чем одному классу. Одной из альтернатив было бы сгруппировать классы, методы и обобщенные функции вместе в соответствии с протоколами, которые они поддерживают.</p>
+
+<h3>Определение направленных потоков</h3>
+
+<pre>
+;;;; THE CLASS STREAM 
+;;; This basic class must be included in all streams, 
+(defclass stream () 
+  ((state :initform 'open :accessor stream-state)) 
+  (:documentation "Foundation of all streams.")) 
+
+;;;; EXTERNAL PROTOCOL SUPPORTED BY ALL STREAMS 
+;;; Page 332 in Common LISP: The Language 
+(defgeneric input-stream-p (stream) 
+   ;; Input streams should override this default method. 
+   (:method ((stream stream)) nil)) 
+
+;;; Page 332 in Common LISP: The Language 
+(defgeneric output-stream-p (stream) 
+   ;; Output streams should override this default method. 
+   (:method ((stream stream)) nil)) 
+
+;;; Page 332 in Common LISP: The Language 
+(defgeneric close (stream Skey abort) 
+   (:documentation "Prevents further I/O operations on stream") 
+   (:method ((stream stream) Skey abort) 
+      (declare (ignore abort)) 
+      (setf (stream-state stream) 'closed))) 
+
+;;; Page 332 in Common LISP: The Language 
+;;; Must be implemented by the element type streams, 
+(defgeneric stream-element-type (stream) 
+   (:documentation "Returns the type of elements of stream")) 
+
+;;;; INTERNAL PROTOCOL SUPPORTED BY ALL STREAMS 
+(defun ensure-open-stream (stream) 
+   "Prevents access to a stream if it is not open." 
+   (let ((state (stream-state stream))) 
+      (unless (eq state 'open) 
+         (error "Attempt to use stream ~A which is -A" 
+                stream state)))) 
+
+;;; bytes-per-element must be implemented by element type streams. 
+(defgeneric bytes-per-element (stream) 
+   (declare (values n-bytes)) 
+   (:documentation "Returns length of one element, in 8-bit bytes.")) 
+
+;;; storage-unit-size must be implemented by device streams, 
+(defgeneric storage-unit-size (stream) 
+   (declare (values n-bytes)) 
+   (:documentation "Returns size of i/o buffer, in 8-bit bytes.")) 
+
+(defun make-element-array (stream) 
+   "Returns array of correct size and element type for stream." 
+   (make-array (/ (storage-unit-size stream) 
+                  (bytes-per-element stream)) 
+               :element-type (stream-element-type stream))) 
+
+;;;; THE CLASS INPUT-STREAM AND ITS METHODS 
+;;; This basic class must be included in all input streams, 
+(defclass input-stream (stream) () 
+  (:documentation "Foundation of all input streams.")) 
+
+;;; Override the default primary method to return true, 
+(defmethod input-stream-p ((stream input-stream)) 
+   t) 
+
+;;;; INTERNAL PROTOCOL SUPPORTED BY ALL INPUT STREAMS 
+;;; Make sure the stream is open before any input is allowed, 
+(defgeneric read-next-element (input-stream) 
+   (declare (values element eof-p)) 
+   (:method :before ((stream input-stream)) 
+      ;; This method ensures that stream is open before 
+      ;; reading; it is inherited by all element type input 
+      ;; streams, so it saves each of those methods from 
+      ;; duplicating this code, 
+      (ensure-open-stream stream)))
+
+;;; This default method on stream is overridden by input 
+;;; streams. It is defined simply to give a comprehensible 
+;;; error message when this situation occurs, and to make it 
+;;; unnecessary for all external functions to check the 
+;;; stream argument type. 
+(defmethod read-next-element ((stream stream)) 
+   (error "Cannot get input from stream ~A of type ~A." 
+          stream (type-of stream)))
+
+;;;; THE CLASS OUTPUT-STREAM AND ITS METHODS 
+;;; This basic class must be included in all output streams, 
+(defclass output-stream (stream) () 
+  (:documentation "Foundation of all output streams.")) 
+
+;;; Override the default primary method to return true, 
+(defmethod output-stream-p ((stream output-stream)) 
+   t) 
+
+;;;; EXTERNAL PROTOCOL SUPPORTED BY ALL OUTPUT STREAMS 
+;; Although COMMON LISP implies that force-output 
+;; and finish-output are supported by character 
+;; streams only, they should apply to all output 
+;; output streams, which is how we do it below. 
+;; Also, since COMMON LISP specifies that the stream 
+;; argument of force-output and finish-output is 
+;; optional, we can't implement these operations 
+;; directly as generic functions. 
+;; Therefore, we define force-output-internal and 
+;; finish-output-internal as generic functions, both of 
+;; which belong to the internal protocol. 
+;; Standardize stream variable if t or nil was given 
+(defmacro standardize-output-stream-var (stream) 
+   `(setf ,stream (cond ((eq ,stream t) *terminal-io*) 
+                        ((null ,stream) *standard-output*) 
+                        (t ,stream))))
+
+;;; Page 384 in Common LISP: The Language 
+(defun force-output (Soptional (stream *standard-output*)) 
+   (standardize-output-stream-var stream) 
+   (force-output-internal stream))
+
+;;; Page 384 in Common LISP: The Language 
+(defun finish-output (soptional (stream *standard-output*)) 
+   (standardize-output-stream-var stream) 
+   (finish-output-internal stream))
+
+;;;; INTERNAL PROTOCOL SUPPORTED BY ALL OUTPUT STREAMS 
+(defgeneric force-output-internal (output-stream) 
+   (:method :before ((stream output-stream)) 
+      ;; The stream must be open, else generate an error, 
+      (ensure-open-stream stream))) 
+
+(defgeneric finish-output-internal (output-stream) 
+   (:method -.before ((stream output-stream)) 
+      ;; The stream must be open, else generate an error, 
+      (ensure-open-stream stream))) 
+
+(defgeneric write-next-element (output-stream element) 
+   (:method :before ((stream output-stream) element) 
+      (declare (ignore element)) 
+      ;; Default method ensures that stream is open before 
+      ;; writing. This method is inherited by all element type 
+      ;; output streams, and thus it saves each of those 
+      ;; methods from duplicating this code, 
+      (ensure-open-stream stream)))
+
+;;; This default method on stream is overridden by outpuf streams. 
+;;; It is defined simply to give a comprehensible error message 
+;;; when this situation occurs, and to make it unnecessary for 
+;;; all user-interface functions to check the stream argument type, 
+(defmethod write-next-element ((stream stream) element) 
+   (declare (ignore element)) 
+   (error "Cannot do output to stream -A of type -A." 
+          stream (type-of stream)))
+
+;;; THE CLASS BIDIRECTIONAL-STREAM 
+;;; This class inherits all needed methods, and supplies none 
+;;; of its own. 
+(defclass bidirectional-stream 
+    (input-stream output-stream) 
+  () 
+  (:documentation "A combined input and output stream.")) 
+</pre>
+
+<h3>Основные моменты направленных потоков</h3>
+
+<p>Здесь определены взаимосвязи между направленными потоками. Все потоки построены на классе stream. Входные потоки строятся на input-stream, а выходные потоки строятся на output-stream.</p>
+
+<p>Здесь определены предикаты типа Common Lisp для потоков, включая input-stream-p и output-stream-p. Наследование этих методов работает аккуратно и эффективно.</p>
+
+<ul>
+<li>Класс stream предоставляет методы по умолчанию для input-stream-p и output-stream-p, которые возвращают nil.</li>
+<li><p>Класс input-stream предоставляет метод для input-stream-p, который переопределяет метод по умолчанию и возвращает t. Однако класс input-stream наследует метод по умолчанию для output-stream-p.</p></li>
+<li><p>Класс output-stream предоставляет метод для output-stream-p, который переопределяет метод по умолчанию и возвращает t. Однако класс output-stream наследует метод по умолчанию для input-stream-p.</p></li>
+<li>Класс bidirectional-stream наследует все эти методы от своих суперклассов input-stream, output-stream и stream. Метод для input-stream-p, предоставляемый классом input-stream, переопределяет метод, предоставляемый классом stream; следовательно, двунаправленный поток определяется как входной поток. Аналогично, двунаправленный поток определяется как выходной поток.</li>
+</ul>
+
+<p>Иногда невозможно реализовать функцию как обобщенную функцию. Например, Common Lisp указывает, что аргумент stream для force-output(принудительного вывода) является необязательным. В CLOS методы не могут специализироваться на необязательных аргументах. Поскольку мы хотим, чтобы аргумент stream выбирал методы, мы определяем force-output как обычную функцию, которая обрабатывает свои аргументы, а затем вызывает force-output-internal для выполнения своей работы. Мы определяем force-output-internal как обобщенную функцию, аргумент потока которой является обязательным. Мы делаем то же самое для finish-output.</p>
+
+<p>Мы реализовали ensure-open-stream и make-element-array как обычные функции Lisp. Мы не ожидаем, что различные типы потоков будут нуждаться в специализированном поведении для этих операций. Потоковый протокол может быть реализован в терминах как обычных, так и обобщенных функций.</p>
+
+<h2>11.5 ПОТОКИ ЛЕНТЫ(TAPE)</h2>
+
+<p>Для целей этого примера мы предполагаем чрезвычайно простую ленточную(tape) систему. Ленточные потоки не поддерживают все возможности дисковых потоков, поскольку ленточное устройство поддерживает последовательный доступ, а не произвольный доступ. Обратите внимание, что ленточные потоки не поддерживают установку положения или добавление данных. Мы также не предоставляем двунаправленный поток ленты.</p>
+
+<h3>Низкоуровневый интерфейс ленты(Tape)</h3>
+
+<p>Здесь мы указываем интерфейс к воображаемой операционной системе для потоков на устройства с магнитной лентой. Мы документируем эти примитивы, но не включаем код Lisp, который их реализует. Мы предполагаем, что эти примитивы существуют, и мы вызываем их в методах для ленточных потоков.</p>
+
+<p>Чтобы упростить пример, все записи на магнитной ленте имеют фиксированный размер, за исключением последней записи, которая обычно является неполной (она не содержит полной записи данных на магнитной ленте) и, следовательно, меньше. Эта ленточная система поддерживает только один непрерывный объем данных, начиная с начала ленты и заканчивая отметкой EOF (конец файла).</p>
+
+<pre><code>&gt;      open-tape-unit tape-unit-number 
+&gt;                     Возвращает "дескриптор ленты/tape-handle", идентифицирующий блок ленты(tape unit).
+
+&gt;      close-tape-unit tape-handle 
+&gt;               Закрывает блок управления лентой и освобождает tape-handle.
+
+&gt;      read-record tape-handle array element-type 
+&gt;                    Считывает следующую запись на ленте в массив. Возвращает два значения с именами eof
+&gt;                    и eof-position. Первое значение (eof) равно нулю, если массив содержит полную запись, 
+&gt;                    или t, если массив содержит неполную запись; в этом случае второе значение представляет
+&gt;                    собой число, обозначающее позицию EOF.
+
+&gt;      write-record tape-handle array element-type soptional (size *tape-record-byte-size*) 
+&gt;                 Записывает содержимое массива в следующую запись на магнитной ленте. Аргумент size
+&gt;                 используется для записи последней записи, которая обычно является неполной и, 
+&gt;                 следовательно, меньше, чем *tape-record-byte-size*, write-record не записывает никаких
+&gt;                 элементов массива, превышающих заданный размер.
+
+&gt;      write-eof-mark tape-handle 
+&gt;               Записывает метку EOF на ленту.
+
+&gt;      rewind tape-handle 
+&gt;            Перематывает ленточный блок на начало ленты.
+</code></pre>
+
+<h3>Определение потоков Ленты</h3>
+
+<pre>
+
+;;;; THE CLASS TAPE-STREAM AND ITS METHODS 
+(defclass tape-stream 
+    (stream) 
+  ((unit :accessor tape-unit 
+         :initform 0 
+         :initarg :unit) 
+   (tape-handle :initform nil :accessor tape-handle) 
+   (tape-record-size :allocation :class 
+                     :initform *tape-record-byte-size* 
+                     :reader storage-unit-size) 
+   (element-buffer :accessor element-buffer) 
+   (buffer-index :accessor buffer-index)) 
+  (:documentation "A stream for accessing a tape device.")) 
+
+(defmethod initialize-instance :after 
+    ((stream tape-stream) skey) 
+   (with-accessors ((tape-handle tape-handle) 
+                    (unit tape-unit) 
+                    (element-buffer element-buffer)) 
+       stream 
+      (setf tape-handle (open-tape-unit unit)) 
+      (setf element-buffer (make-element-array stream))))
+
+;;; Close the tape unit and clear the tape-handle, 
+(defmethod close ((stream tape-stream) skey abort) 
+   (declare (ignore abort)) 
+   (with-accessors ((tape-handle tape-handle)) 
+       stream 
+      (when tape-handle 
+         (close-tape-unit tape-handle) 
+         (setf tape-handle nil))))
+
+;;;; THE CLASS TAPE-INPUT-STREAM AND ITS METHODS 
+(defclass tape-input-stream 
+    (tape-stream input-stream) 
+  ;; position in buffer of EOF 
+  ;; or nil if EOF has not been reached 
+  ((eof-offset :initform nil 
+               :accessor eof-offset) 
+   ;; provide a default value for this inherited slot 
+   (buffer-index :initform nil)) 
+  (:documentation "A stream for getting input from a tape device."))
+
+(defmethod read-next-element ((stream tape-input-stream)) 
+   (with-accessors ((element-buffer element-buffer) 
+                    (buffer-index buffer-index) 
+                    (tape-handle tape-handle) 
+                    (eof-offset eof-offset)) 
+       stream 
+      ;; Make sure the input buffer contains the desired data 
+      (unless (and buffer-index 
+                   (< buffer-index (length element-buffer))) 
+         ;; The current buffer does not contain the desired element. 
+         ;; Read the next record, 
+         (multiple-value-bind (eof byte-offset) 
+             (read-record tape-handle element-buffer 
+                          (stream-element-type stream)) 
+            (if eof (setf eof-offset 
+                          (/ byte-offset (bytes-per-element stream)))) 
+            (setf buffer-index 0))) 
+      ;; Return nil t if EOF is reached 
+      (if (and eof-offset (>= buffer-index eof-offset)) 
+          (values nil t) 
+          ;; Otherwise return data element and update buffer index 
+          (progl (aref element-buffer buffer-index) 
+                 (incf buffer-index)))))
+
+;;;; THE CLASS TAPE-OUTPUT-STREAM AND ITS METHODS 
+
+(defclass tape-output-stream 
+    (tape-stream output-stream) 
+  ((buffer-index :initform 0)) 
+  (:documentation "A stream for writing output to a tape device.")) 
+
+(defmethod write-next-element ((stream tape-output-stream) element) 
+   (with-accessors ((element-buffer element-buffer) 
+                    (buffer-index buffer-index) 
+                    (tape-handle tape-handle)) 
+       stream 
+      (unless (< buffer-index (length element-buffer)) 
+         ;; index is past the end of the buffer, so we 
+         ;; need to write out the buffer and update index 
+         (write-record tape-handle element-buffer 
+                       (stream-element-type stream)) 
+         (setf buffer-index 0)) 
+      (setf (aref element-buffer buffer-index) element) 
+      (incf buffer-index)))
+
+;;; For close :abort, rewind tape immediately and write EOF. 
+;;; For normal close, write out remaining buffered data (if 
+;;; necessary) and then write EOF. 
+(defmethod close :before ((stream tape-output-stream) 
+                          &key abort) 
+   (with-accessors ((tape-handle tape-handle)) 
+       stream 
+      (if abort 
+          (rewind tape-handle) 
+          ;; No need to write buffer out if there is no buffer-index 
+          ;; because that implies that no writing has begun 
+          (unless (zerop buffer-index) 
+             (write-record tape-handle element-buffer 
+                           (stream-element-type stream) 
+                           ;; include the size argument 
+                           (* buffer-index 
+                              (bytes-per-element stream))))) 
+      (write-eof-mark tape-handle)))
+
+;;; Neither force-output-internal nor finish-output-internal 
+;;; should write an incomplete tape record to the tape device, 
+;;; because it would then be impossible to continue to do 
+;;; output at the correct tape position. Therefore the two 
+;;; methods below don't do anything. 
+(defmethod force-output-internal ((stream tape-output-stream)) 
+   nil) ;nil is the documented returned value. 
+
+(defmethod finish-output-internal ((stream tape-output-stream)) 
+   nil) ;nil is the documented returned value. 
+</pre>
+
+<h3>Основные моменты ленточных потоков</h3>
+
+<p>Целью ленточных потоков является изоляция всех знаний об устройстве с магнитной лентой. Единственная часть нашей программы, которая использует ленточные примитивы, - это ленточные потоки. Не менее важным аспектом ленточных потоков является то, что они получают доступ к устройству на магнитной ленте для ввода и/или вывода без каких-либо знаний о типе считываемых или записываемых элементов. Ленточные потоки манипулируют данными, не зная, состоят ли данные из символьных знаков(characters), байтов или других типов данных.</p>
+
+<p>Эта модульность является краеугольным камнем нашего проекта. Модульность зависит от строгого разграничения ответственности. Классы потока ленты отвечают за доступ к устройству с магнитной лентой, и они должны полагаться на классы потока с типом элементов для обработки любой работы, специфичной для типов элементов данных.</p>
+
+<p>Примитивы в нашем ленточном интерфейсе не поддерживают set-position. Ленточное устройство считывает от начала до конца или записывает от начала до конца и не может изменить свое представление о текущем положении, кроме как перемотать полностью до начала ленты. Это ограничение оказывает два эффекта на ленточные потоки:</p>
+
+<ul>
+<li>Ленточные потоки не предоставляют метод для установки положения(set-position). Если клиент пытается установить положение ленточного потока, выдается сообщение об ошибке "неприменимый метод".</li>
+<li>Поскольку мы не можем установить положение, невозможно реализовать force-output-internal(принудительный вывод-внутренний) или finish-output-internal(конечный вывод-внутренний). Если бы мы записали неполную запись на магнитную ленту на ленточное устройство, мы больше не смогли бы продолжать вывод в правильном положении ленты. Однако, даже если мы не можем реализовать эти обобщенные функции, важно, чтобы мы определили методы для них. При вызове методы просто возвращают nil. Существование этих методов позволяет клиентам использовать force-output(принудительный вывод) и finish-output(конечный вывод) во всех выходных потоках. Если устройство может принудительно выполнить вывод или завершить его, оно делает это; если это не удается, ошибка не сигнализируется.</li>
+</ul>
+
+<p>Такое поведение согласуется с нашим определенным внешним протоколом. Все выходные потоки должны поддерживать force-output(принудительный вывод) и finish-output(завершение вывода), хотя фактические детали того, что происходит, зависят от устройства. Частью контракта этих двух функций является то, что ошибка не должна сигнализироваться, даже если устройство не может поддерживать эти функции. Это необычно; как правило, целесообразно разрешить сигнализацию ошибки "нет применимого метода", когда обобщенная функция не реализована для набора аргументов.</p>
+
+<h2>11.6 ДИСКОВЫЕ ПОТОКИ</h2>
+
+<p>Дисковые потоки должны иметь прямой доступ к диску. Для целей этого примера мы предполагаем простой интерфейс к воображаемой операционной системе для потоков дисковых файлов. В реальной реализации этот уровень был бы самой низкой поддержкой файловой системы.</p>
+
+<h3>Низкоуровневый Дисковый интерфейс</h3>
+
+<p>Мы предполагаем простую операционную систему, которая поддерживает файлы произвольного доступа с блоками фиксированного размера(fixed-size) (соответствующими сектору диска). Интерфейс предполагает, что файл уже существует, иначе open-disk-file создаст его.
+disk-write(запись на диск) создает блок, если он еще не существует. Мы предполагаем следующие примитивы для доступа к диску:</p>
+
+<pre><code>   &gt;     open-disk-file file-name-string 
+   &gt;           Возвращает "дескриптор файла" для идентификации файла и открывает файл для произвольного
+   &gt;           доступа, ориентированного на блок.
+
+   &gt;     byte-length file-handle 
+   &gt;           Возвращает длину файла в байтах.
+
+   &gt;    (setf byte-length) n-bytes file-handle 
+   &gt;           Задает длину файла в байтах. Вызывается с помощью синтаксиса setf следующим образом:
+   &gt;            (setf (byte-length file-handle) n-bytes)
+
+   &gt;     close-disk-file file-handle 
+   &gt;           Закрывает файл и освобождает дескриптор файла.
+
+   &gt;     disk-read file-handle array block-number element-type &amp;key (wait t) 
+   &gt;           Считывает содержимое указанного блока файла в массив, автоматически преобразуя внутренний
+   &gt;           формат данных диска в тип элемента. Если ожидание равно t, disk-read(чтение с диска) не
+   &gt;           возвращается до завершения операции с диском. В противном случае disk-read возвращается
+   &gt;           сразу после запроса операции, возвращая идентификатор, который может быть передан в 
+   &gt;           disk-finished-p, чтобы узнать, завершена ли операция с диском. К содержимому массива не
+   &gt;           следует обращаться до завершения операции с диском. То есть, если ожидание равно нулю,
+   &gt;           доступ к массиву не должен осуществляться до тех пор, пока disk-finished-p не вернет t.
+
+   &gt;     disk-write file-handle array block-number element-type &amp;key (wait t) 
+   &gt;           Записывает содержимое массива в указанный блок файла, автоматически преобразуя тип 
+   &gt;           элемента во внутренний формат данных диска. Если ожидание равно t, запись на диск не 
+   &gt;           возвращается до завершения операции с диском. В противном случае disk-write возвращается
+   &gt;           сразу после запроса операции, возвращая идентификатор, который может быть передан в 
+   &gt;          disk-finished-p, чтобы узнать, завершена ли операция с диском.
+   &gt;          К содержимому массива не следует обращаться до завершения операции с диском. То есть, 
+   &gt;          если ожидание равно нулю, доступ к массиву не должен осуществляться до тех пор, пока 
+   &gt;          disk-finished-p не вернет t.
+
+   &gt;     disk-finished-p identifier 
+   &gt;            Возвращает t, если операция завершена. Идентификатор - это значение, возвращаемое при 
+   &gt;            disk-read(чтении с диска) или disk-write(записи на диск), если ожидание равно нулю.
+</code></pre>
+
+<p>Дисковые Потоки значительно сложнее, чем потоки на магнитной ленте. Примитив disk-write поддерживает ключевое слово wait, которое мы будем использовать для различения force-output и finish-output. Common Lisp указывает, что force-output должен начать запись буферизованных данных, но не должен ждать завершения записи. В отличие от этого, finish-output записывает буферизованные данные и ожидает завершения записи. Это различие означает, что дисковые потоки выполняют некоторые асинхронные действия, что требует от нас помнить о тех ситуациях, для которых нам необходимо проверить, выполняется ли операция disk-write, прежде чем продолжить.</p>
+
+<h3>Определение дисковых потоков</h3>
+
+<pre>
+;;;; THE DISK-STREAM CLASS 
+(defclass disk-stream 
+    ;; Disk streams are built on the basic class stream 
+    (stream) 
+  ;; Handle to file returned by OS 
+  ((file-handle :initform nil 
+                :accessor file-handle) 
+   ;; Name of the file for.the OS 
+   (pathname :initarg :pathname 
+             :accessor disk-pathname) 
+   ;; Size of a disk sector, expressed in 8-bit bytes 
+   (disk-sector-size :allocation :class ■ 
+                                 :initform *disk-sector-byte-size* 
+                                 :reader storage-unit-size) 
+   ;; Position of current element within file 
+   (element-number :initform 0 
+                   :accessor element-number) 
+   ;; Total number of elements in disk file 
+   (element-length :accessor element-length) 
+   ;; Element buffer, used for I/O 
+   (element-buffer :accessor element-buffer) 
+   ;; Index into element buffer or NIL if uninitialized 
+   (buffer-index :initform nil 
+                 :accessor buffer-index) 
+   ;; Disk block number of buffer, 
+   (block-number :initform 0 
+                 :accessor block-number)) 
+  (:documentation "A stream for accessing a disk file."))
+
+;;; This method does a lot of initialization, and some of 
+;;; it depends on happening in a certain order. Hence an 
+;;; initialization method is preferable to initforms, 
+;;; whose execution order is not defined, 
+(defmethod initialize-instance :after 
+    ((stream disk-stream) skey) 
+   ;; we use with-accessors for convenient access to the slots 
+   (with-accessors ((file-handle file-handle) 
+                    (element-length element-length) 
+                    (pathname disk-pathname) 
+                    (element-buffer element-buffer)) 
+       stream 
+      (setf file-handle (open-disk-file (namestring pathname))) 
+      (setf element-buffer (make-element-array stream)) 
+      (setf element-length (/ (byte-length file-handle) 
+                              (bytes-per-element stream)))))
+
+; EXTERNAL PROTOCOL SUPPORTED BY ALL DISK STREAMS 
+
+;; set-position is an extension to COMMON LISP, which 
+;; we include in the External Interface. It allows 
+;; greater control when accessing disk streams. 
+;; This sets the current position to the desired element 
+;; position. If the element position is beyond the end 
+;; of the file, eof-error-p and eof-value define whether 
+;; an error or a value is returned. The element position 
+;; is the element number in the file, where the first 
+;; element is number 0, the next is 1, and so on. 
+(defgeneric set-position (disk-stream new-position 
+                          &optional eof-error-p eof-value) 
+   (:method ((stream disk-stream) new-position 
+             &optional eof-error-p eof-value) 
+      (with-accessors ((element-buffer element-buffer) 
+                       (buffer-index buffer-index) 
+                       (element-length element-length) 
+                       (file-handle file-handle) 
+                       (block-number block-number)) 
+          stream 
+         ;; Don't allow setting position past end of file 
+         (if (> new-position element-length) 
+             (if eof-error-p 
+                 (error "End of file in ~A" stream) 
+                 eof-value) 
+             ;; Here, new-position is OK 
+             (multiple-value-bind (block-no offset) 
+                 (truncate new-position (length element-buffer)) 
+                ;; Unless current buffer is valid 
+                (unless (and buffer-index 
+                             ;; And contains the same block 
+                             (= block-number block-no)) 
+                   ;; Have to read in the desired block 
+                   (setf block-number block-no) 
+                   (disk-read file-handle element-buffer block-number 
+                              (stream-element-type stream))) 
+                (setf buffer-index offset) 
+                (setf element-number new-position))))))
+
+(defmethod close ((stream disk-stream) Skey abort) 
+   (declare (ignore abort)) 
+   (with-accessors ((file-handle file-handle)) 
+       stream 
+      ;; Checking and clearing the file-handle isn't essential 
+      ;; but is good practice in case CLOSE is called multiple 
+      ;; times, especially CLOSE then CLOSE :ABORT T 
+      (when file-handle 
+         (close-disk-file file-handle) 
+         (setf file-handle nil))))
+
+;;;; THE CLASS DISK-INPUT-STREAM AND ITS METHODS 
+
+(defclass disk-input-stream (disk-stream input-stream) () 
+  (:documentation "A stream for getting input from a disk.")) 
+
+(defmethod read-next-element ((stream disk-input-stream)) 
+   (with-accessors ((element-number element-number) 
+                    (element-length element-length) 
+                    (buffer-index buffer-index) 
+                    (element-buffer element-buffer) 
+                    (block-number block-number) 
+                    (file-handle file-handle)) 
+       stream 
+      (cond ((< element-number element-length) 
+             ;; Make sure the input buffer contains the desired data. 
+             (unless (and buffer-index 
+                          (< buffer-index (length element-buffer))) 
+                ;; Unless at beginning, advance to next block, 
+                (if buffer-index (incf block-number)) 
+                (disk-read file-handle element-buffer block-number 
+                           (stream-element-type stream)) 
+                (setf buffer-index 0)) 
+             ;; Update pointers and return data element, 
+             (incf element-number) 
+             (progl (aref element-buffer buffer-index) 
+                    (incf buffer-index))) 
+            (t ;; At EOF 
+             (values nil t)))))
+
+;;;; THE CLASS DISK-OUTPUT-STREAM AND ITS METHODS 
+(defclass disk-output-stream 
+    (disk-stream output-stream) 
+  ;; disk-id is used to store the identifier returned 
+  ;; by disk-write, which we will use to find out if 
+  ;; the disk-write is still in progress, 
+  ((disk-id :initform nil 
+            :accessor disk-id)) 
+  (:documentation "A stream for writing output to a disk."))
+
+;;; This comes in useful when we need to ensure that 
+;;; there is no disk-write currently in progress, 
+(defmethod wait-for-disk ((stream disk-output-stream)) 
+   (with-accessors ((disk-id disk-id)) 
+       stream 
+      (unless (null disk-id) 
+         ;; process-wait is not part of COMMON LISP, but we 
+         ;; defined it earlier, in "Locks and Processes" 
+         (process-wait "Disk wait" #'disk-finished-p disk-id) 
+         (setf disk-id nil))))
+
+(defmethod write-next-element 
+    ((stream disk-output-stream) element) 
+   (with-accessors ((element-buffer element-buffer) 
+                    (buffer-index buffer-index) 
+                    (block-number block-number) 
+                    (element-number element-number) 
+                    (element-length element-length) 
+                    (file-handle file-handle)) 
+       stream 
+      ;; Ensure that no disk write is happening, 
+      (wait-for-disk stream) 
+      (unless (and buffer-index (< buffer-index 
+                                   (length element-buffer))) 
+         ;; Current buffer does not contain the desired element, 
+         (when buffer-index 
+            ;; Write out the old buffer and update the pointers, 
+            (disk-write file-handle element-buffer block-number 
+                        (stream-element-type stream)) 
+            (incf block-number)) 
+         ;; Need to read in next block in case we are 
+         ;; overwriting an existing file, 
+         (when (< element-number element-length) 
+            (disk-read file-handle element-buffer block-number 
+                       (stream-element-type stream))) 
+         (setf buffer-index 0)) 
+      (setf (aref element-buffer buffer-index) element) 
+      (incf buffer-index) 
+      (incf element-number) 
+      ;; Update the EOF pointer as well, but defer the actual 
+      ;; setting of the EOF pointer on the disk until CLOSE (or 
+      ;; FINISH-OUTPUT) time to reduce overhead. FINISH-OUTPUT 
+      ;; should be called anyway when dealing with files which 
+      ;; are being read by other processes, 
+      (when (>» element-number element-length) 
+      (setf element-length element-number))))
+
+;;; The methods for force-output-internal and finish-output-internal 
+;;; check whether a force-output-internal is already in progress. 
+;;; If so, they don't do an additional, unnecessary disk-write. 
+(defmethod force-output-internal ((stream disk-output-stream)) 
+   (with-accessors ((buffer-index buffer-index) 
+                    (file-handle file-handle) 
+                    (element-buffer element-buffer) 
+                    (disk-id disk-id) 
+                    (block-number block-number)) 
+       stream 
+      (unless disk-id 
+         ;; A force-output-internal is not already in 
+         ;; progress, so we start one. 
+         (when buffer-index 
+            ;; The current buffer contents are valid. Write them 
+            ;; out. Don't change any of the pointers in case 
+            ;; output is simply continued. 
+            (setf disk-id (disk-write file-handle element-buffer 
+                                      block-number 
+                                      (stream-element-type stream) 
+                                      :wait nil))))) 
+   nil) ;; nil is the documented returned value.
+
+(defmethod finish-output-internal ((stream disk-output-stream)) 
+   (with-accessors ((file-handle file-handle) 
+                    (buffer-index buffer-index) 
+                    (element-length element-length) 
+                    (disk-id disk-id)) 
+       stream 
+      ;; Don't do anything if buffer is invalid 
+      (when buffer-index 
+         (unless disk-id 
+            ;; A force-output-internal is not already in 
+            ;; progress, so we start one. 
+            (force-output-internal stream)) 
+         ;; Also, update the EOF pointer on the disk. It's OK 
+         ;; if the operating system causes this to hang until 
+         ;; the disk is updated. Note: this could be optimized 
+         ;; to do this only if the value has changed, 
+         (setf (byte-length file-handle) 
+               (* element-length (bytes-per-element stream))) 
+         ;; And then wait for it to finish, 
+         (wait-for-disk stream))))
+
+(defmethod set-position :before ((stream disk-output-stream) 
+                                 new-position 
+                                 &optional eof-error-p eof-value) 
+   (declare (ignore new-position eof-error-p eof-value)) 
+   ;; Before a new disk block can be read in containing the 
+   ;; new position, we have to write out the old block if it 
+   ;; has been modified. Note: this could be improved by 
+   ;; seeing whether the new-position argument is still in 
+   ;; the same buffer, and not doing finish-output-internal 
+   ;; in that case, 
+   (finish-output-internal stream)) 
+
+;; This needs to be done before the primary methods are 
+;; called, to prepare the file to be closed by first sending 
+
+;;; out any buffered output. 
+(defmethod close :before ((stream disk-output-stream) 
+                          &key abort) 
+   (unless abort 
+      (finish-output-internal stream)))
+
+;;;; THE CLASS DISK-BIDIRECTIONAL-STREAM 
+(defclass disk-bidirectional-stream 
+    (disk-input-stream disk-output-stream bidirectional-stream) 
+  () 
+  (:documentation "A combined input and output disk stream.")) 
+
+;;; Bidirectional streams do both reading and writing. 
+;;; Before reading, ensure that no disk-write is happening. 
+(defmethod read-next-element :before 
+           ((stream disk-bidirectional-stream)) 
+   (wait-for-disk stream)) 
+</pre>
+
+<h3>Основные моменты дисковых потоков</h3>
+
+<p>Дисковые потоки аналогичны ленточным потокам в том смысле, что они изолируют все сведения о дисковом устройстве. Дисковые потоки отвечают за обработку всей работы, связанной с диском, и они должны выполнять свою работу, не завися от знания типов элементов данных.</p>
+
+<p>Однако дисковые потоки должны предоставлять тип элементов потока в качестве аргумента для disk-read и disk-write. Для этого методы дискового потока вызывают обобщенную функцию stream-element-type. Каждый тип элемента потока предоставляет метод для stream-element-type. Таким образом, когда методам дискового потока требуется информация о типе элемента, они используют документированный внутренний протокол и полагаются на классы типов элементов, обрабатывающие аспекты типов элементов потоков.</p>
+
+<p>Также стоит отметить, что дисковые потоки вводят одну новую функцию во внешний протокол: set-position. Поскольку дисковые примитивы поддерживают чтение и запись произвольных блоков, полезно предоставить эту возможность непосредственно пользователям нашей потоковой программы. Дисковые потоки поддерживают set-position, поскольку это имеет смысл для дискового устройства; однако нет требования, чтобы все потоки устройств поддерживали set-position(задание положения).</p>
+
+<p>Дисковые потоки более сложны, чем ленточные потоки, из-за асинхронного поведения записи на диск (поддерживается ключевым словом :wait для disk-write) и возможности set-position(установки положения). Важно определить места в коде, где мы используем wait-for-disk(ожидание диска), потому что это дает нам основу(framework) для обсуждения модульности дисковых потоков. Общее правило заключается в том, что мы должны дождаться завершения записи на диск, прежде чем изменять буфер данных. Буфер изменяется как с помощью disk-read(чтения с диска), так и с помощью функций, которые записывают элементы в массив.</p>
+
+<ul>
+<li>wait-for-disk(ожидание диска) реализуется методом в disk-output-stream и слотом disk-id, который является слотом disk-output-stream. Правильно связывать поведение wait-for-disk с потоками вывода на диск, поскольку запись на диск происходит только в потоках вывода на диск.</li>
+<li>Дисковому потоку, предназначенному только для ввода, не нужно было бы вызывать disk-write, что означает, что потоку, предназначенному только для ввода, никогда не нужно ждать диск. Нет методов для disk-input-stream вызывающих wait-for-disk.</li>
+<li>Как правило, дисковый поток, предназначенный только для вывода, должен дождаться диска, прежде чем изменять буфер. Это происходит в методе для write-next-element.</li>
+<li>Основной метод для set-position привязан к классу disk-stream. Этот метод вызывает disk-read без ожидания диска, потому что для потоков только для ввода ожидание не требуется и, по сути, не поддерживается. Однако выходные потоки должны дождаться диска, прежде чем вызывать disk-read. Мы реализуем это ожидание, предоставляя метод before для set-position для класса disk-output-stream. Этот метод вызывает finish-output, который, в свою очередь, вызывает write-next-element, который при необходимости ожидает диск.</li>
+<li>Двунаправленный дисковый поток должен дождаться диска перед вызовом функции disk-read(чтения с диска) или disk-write(записи с диска). Двунаправленные потоки наследуют поведение ожидания, уже реализованное выходными потоками, но во входных потоках нет поведения ожидания (поскольку ожидание не требуется для потоков только для ввода). Поэтому мы поддерживаем поведение ожидания в методе before для read-next-element(чтения следующего элемента) для класса disk-bidirectional-stream.</li>
+</ul>
+
+<h2>11.7 ПОТОКИ СИМВОЛЬНЫХ ЗНАКОВ(CHARACTER)</h2>
+
+<p>Здесь мы определяем наши потоки для первого типа элемента; потоки символьных знаков выполняют все, что необходимо для обработки элментов типа символьных знаков. Эти потоки значительно проще, чем потоки типа устройств.</p>
+
+<h3>Определение потоков символьных знаков</h3>
+
+<pre>
+;;;; THE CLASS CHARACTER-STREAM 
+(defclass character-stream 
+    (stream) 
+  ((bytes-per-element :allocation :class 
+              :initform 1 
+              :reader bytes-per-element) 
+   (element-type :allocation :class 
+         :initform 'character 
+         :reader stream-element-type)) 
+  (:documentation "A stream for transmitting characters."))
+
+;;;;;; EXTERNAL PROTOCOL SUPPORTED BY CHARACTER STREAMS 
+
+;; Because COMMON LISP specifies that the stream argument to 
+;; read-char and write-char is optional, we implement 
+;; these operations as ordinary functions. The "generic" 
+;; aspect of read-char and write-char lies within the bodies 
+;; of the functions, where they call the generic functions 
+;; read-next-element and write-next-element. 
+;; Standardize stream variable if t or nil was given. 
+;; This is done for input streams on characters, but 
+;; not on bytes, since the byte-stream operations do 
+;; not default the stream argument; it is required, 
+(defmacro standardize-char-input-stream-var (stream) 
+  `(setf ,stream (cond ((eq ,stream t) *terminal-io*) 
+               ((null ,stream) *standard-input*) 
+               (t ,stream))))
+
+;;; Page 379 in Common LISP: The Language 
+(defun read-char (&optional (input-stream *standard-input*) 
+            eof-error-p eof-value recursive-p) 
+  (standardize-char-input-stream-var input-stream) 
+  (multiple-value-bind (element eof-p) 
+      (read-next-element input-stream) 
+    (cond (eof-p 
+       (if eof-error-p 
+           (if recursive-p 
+           (error "End of file while reading from ~A" 
+              input-stream) 
+           (error "End of file in ~A" input-stream)) 
+           eof-value)) 
+      (t 
+       element))))
+
+;;; Page 384 in Common LISP: The Language 
+(defun write-char (character 
+           &optional (output-stream *standard-output*)) 
+  (standardize-output-stream-var output-stream) 
+  (write-next-element output-stream character))
+
+;;;; THE DIRECTIONAL CHARACTER-STREAM CLASSES 
+(defclass character-input-stream 
+    (character-stream input-stream) 
+  () 
+  (:documentation "A stream for getting character input.")) 
+
+(defclass character-output-stream 
+    (character-stream output-stream) 
+  () 
+  (:documentation "A stream for writing character output.")) 
+
+(defclass character-bidirectional-stream 
+    (character-input-stream 
+     character-output-stream 
+     bidirectional-stream) 
+  () 
+  (:documentation "A combined input and output character stream.")) 
+</pre>
+
+<h3>Основные моменты потоков символьных знаков</h3>
+
+<p>Потоки символьных данных обрабатывают элементы типа символьных знаков(character). Обобщенные функции bytes-per-element и stream-element-type хранят информацию о структуре элементов символьных знаков. Поскольку оба они являются константами, мы решили сохранить их в слотах классов, которые имеют методы чтения. В качестве альтернативы мы могли бы сохранить информацию в формах defmethod, где методы просто возвращали константы.</p>
+
+<p>Класс character-stream предполагает, что каждый символьный знак помещается в один байт. Некоторые реализации поддерживают символьные знаки, для которых требуется более одного байта памяти. Наша модель может быть расширена, чтобы включить классы, построенные на потоке символьных знаков; такие классы могли бы предоставлять слот класса с именем bytes-per-element для переопределения слота класса, определенного классом character-stream.</p>
+
+<p>Common Lisp указывает, что потоки символьных знаков поддерживают функции read-char и write-char. (Common Lisp также определяет несколько других функций, которые управляют потоками символьных знаков, но в этом примере реализованы не все из них.) Реальные преимущества нашей основы потоков(stream foundation) становятся очевидными здесь: очень легко определить read-char и write-char в терминах read-next-element и write-next-element. Как мы продемонстрируем в byte streams(потоках байтов), одинаково легко реализовать функции ввода и вывода байтов, используя одну и ту же основу.</p>
+
+<p>Мы определяем character-input-stream, character-output-stream и character-bidirectional-stream, чтобы заполнить организацию типов. Ни один из этих классов не предоставляет собственных методов или слотов. Однако, определяя эти классы, мы даем возможность клиентам использовать typep для определения того, относится ли объект к одному из этих типов потоков.</p>
+
+<h2>11.8 БАЙТОВЫЕ ПОТОКИ</h2>
+
+<p>Здесь мы определяем несколько видов потоков байтов, каждый из которых предназначен для обработки байтов различного размера.</p>
+
+<h2>Определение потоков байтов</h2>
+
+<pre>
+;;;; THE BYTE-STREAM CLASSES 
+(defclass byte-stream (stream) () 
+  (:documentation "A stream for transmitting bytes of data.")) 
+
+(defclass 8-bit-byte-stream 
+    (byte-stream) 
+  ((bytes-per-element :allocation :class 
+              :initform 1 
+              :reader bytes-per-element) 
+   (element-type :allocation :class 
+         :initform '(unsigned-byte 8) 
+         :reader stream-element-type)) 
+  (:documentation "A stream for transmitting 8-bit bytes of data.")) 
+
+(defclass 32-bit-word-stream 
+    (byte-stream) 
+  ((bytes-per-element :allocation :class 
+              :initform 4 
+              :reader bytes-per-element) 
+   (element-type :allocation :class 
+         :initform '(signed-byte 32) 
+         :reader stream-element-type)) 
+  (:documentation "A stream for transmitting 32-bit words of data."))
+
+;;;; THE CLASS BYTE-INPUT-STREAM AND A METHOD 
+(defclass byte-input-stream (byte-stream input-stream) ()) 
+
+;;; Page 382 in Common LISP: The Language 
+(defgeneric read-byte (byte-input-stream 
+               &optional eof-error-p eof-value) 
+  (:method ((stream byte-input-stream) 
+        &optional eof-error-p eof-value) 
+    (multiple-value-bind (element eof-p) 
+    (read-next-element stream) 
+      (cond (eof-p 
+         (if eof-error-p 
+         (error "End of file while reading from ~A" stream) 
+         eof-value)) 
+        (t 
+         element)))))
+
+;;;; THE CLASS BYTE-OUTPUT-STREAM AND A METHOD 
+(defclass byte-output-stream (byte-stream output-stream) ()) 
+
+;;; Page 385 in Common LISP: The Language 
+(defgeneric write-byte (output-stream byte) 
+  (:method ((stream byte-output-stream) byte) 
+    (write-next-element stream byte)))
+
+;;;; THE OTHER BYTE-STREAM CLASSES 
+(defclass 8-bit-byte-input-stream 
+    (8-bit-byte-stream byte-input-stream) 
+  ()) 
+
+(defclass 8-bit-byte-output-stream 
+    (8-bit-byte-stream byte-output-stream) 
+  ())
+
+(defclass 8-bit-byte-bidirectional-stream 
+    (8-bit-byte-input-stream 
+     8-bit-byte-output-stream 
+     bidirectional-stream) 
+  ())
+
+(defclass 32-bit-word-input-stream 
+    (32-bit-word-stream byte-input-stream) 
+  ())
+
+(defclass 32-bit-word-output-stream 
+    (32-bit-word-stream byte-output-stream) 
+  ())
+
+(defclass 32-bit-word-bidirectional-stream 
+    (32-bit-word-input-stream 
+     32-bit-word-output-stream 
+     bidirectional-stream) 
+  ()) 
+</pre>
+
+<h3>Основные моменты потоков байтов</h3>
+
+<p>Потоки байтов демонстрируют еще одно хорошее применение модульности. Мы разделили потоки байтов на две части: одна часть поддерживает аспект направления, другая часть поддерживает структурный аспект (структура типа элементов).</p>
+
+<p>Аспект направленности потоков байтов включает в себя функции Common Lisp read-byte и write-byte; то есть поток ввода байта поддерживает read-byte(чтение байта), тогда как поток вывода байтов поддерживает (запись байта). Классы byte-input-stream и byte-output-stream поддерживают эти функции с помощью методов, которые вызывают read-next-element и write-next-element.Таким образом, эти два класса обрабатывают аспект направления потоков байтов.</p>
+
+<p>Структурный аспект потоков байтов включает в себя bytes-per-element(байты на элемент) и stream-element-type(тип элемента потока), которые описывают структуру типа элемента. Классы 8-bit-byte-stream и 32-bit-word-stream поддерживают эти обобщенные функции с методами (методы чтения, которые обращаются к слотам класса, где хранится информация). Таким образом, эти два класса обрабатывают структурный аспект потоков байтов.</p>
+
+<p>Затем мы определяем классы, которые построены как на потоке "аспект направления и типа элемента", так и на потоковом классе "структурный аспект типа элемента". Например, класс 8-bit-byte-input-stream наследуется от byte-input-stream и 8-bit-byte-stream.</p>
+
+<h2>11.9 СОЗДАВАЕМЫЕ ПОТОКИ</h2>
+
+<p>Для использования потока необходимы три компонента: класс направления, класс устройства и класс типа элемента. Мы не ожидаем, что пользователи создадут экземпляр какого-либо из классов stream, определенных до сих пор, поскольку все эти классы stream являются неполными. Теперь мы определяем полные, пригодные для использования потоки, которые мы могли бы назвать "instantiable/создаваемыми" потоками. "Instantiable/Создаваемый" указывает на то, что мы ожидаем, что клиенты будут создавать экземпляры этих потоков.</p>
+
+<h3>Определение создаваемых потоков</h3>
+
+<pre>
+;;;; An instantiable stream needs three components, indicating 
+;;;; the element type, the direction, and the device type. 
+;;;; INSTANTIABLE CHARACTER DISK STREAMS 
+(defclass character-disk-input-stream 
+    (character-input-stream disk-input-stream) 
+  ())
+
+(defclass character-disk-output-stream 
+    (character-output-stream disk-output-stream) 
+  ())
+
+(defclass character-disk-bidirectional-stream 
+    (character-bidirectional-stream disk-bidirectional-stream) 
+  ())
+
+;;;; INSTANTIABLE CHARACTER TAPE STREAMS 
+(defclass character-tape-input-stream 
+    (character-input-stream tape-input-stream) 
+  ())
+
+(defclass character-tape-output-stream 
+    (character-output-stream tape-output-stream) 
+  ()) 
+
+;;;; INSTANTIABLE 8-BIT-BYTE DISK STREAMS 
+(defclass 8-bit-byte-disk-input-stream 
+    (8-bit-byte-input-stream disk-input-stream) 
+  ())
+
+(defclass 8-bit-byte-disk-output-stream 
+    (8-bit-byte-output-stream disk-output-stream) 
+  ())
+
+(defclass 8-bit-byte-disk-bidirectional-stream 
+    (8-bit-byte-bidirectional-stream 
+     disk-bidirectional-stream) 
+  ())
+
+;;;; INSTANTIABLE 8-BIT-BYTE TAPE STREAMS 
+(defclass 8-bit-byte-tape-input-stream 
+    (8-bit-byte-input-stream tape-input-stream) 
+  ())
+
+(defclass 8-bit-byte-tape-output-stream 
+    (8-bit-byte-output-stream tape-output-stream) 
+  ())
+
+;;;; INSTANTIABLE 32-BIT-WORD DISK STREAMS 
+(defclass 32-bit-word-disk-input-stream 
+    (32-bit-word-input-stream disk-input-stream) 
+  ())
+
+(defclass 32-bit-word-disk-output-stream 
+    (32-bit-word-output-stream disk-output-stream) 
+  ())
+
+(defclass 32-bit-word-disk-bidirectional-stream 
+    (32-bit-word-bidirectional-stream 
+     disk-bidirectional-stream) 
+  ()) 
+
+;;;; INSTANTIABLE 32-BIT-WORD TAPE STREAMS 
+(defclass 32-bit-word-tape-input-stream 
+    (32-bit-word-input-stream tape-input-stream) 
+  ())
+
+(defclass 32-bit-word-tape-output-stream 
+    (32-bit-word-output-stream tape-output-stream) 
+  ())
+
+</pre>
+
+<h2>11.10 ПРОЦЕДУРНОЕ ОПРЕДЕЛЕНИЕ ДЛЯ СОЗДАНИЯ ПОТОКОВ</h2>
+
+<p>На данный момент мы завершили написание основания потоков и реализовали несколько знакомых потоковых функций Common Lisp. Однако мы проигнорировали вопрос о том, как создаются потоки в первую очередь. Нам нужно определить интерфейс для создания потоков. Поскольку одной из наших целей было сделать потоки легко расширяемыми, мы должны спроектировать этот интерфейс как расширяемый протокол и задокументировать его; этот протокол позволяет программистам подключать новый класс потока(stream) к существующему механизму и делать новый класс общедоступным.</p>
+
+<h3>Разработка протокола для создания потоков</h3>
+
+<p>Интерфейс для создания потоков будет использоваться open и другими функциями, которые необходимы для создания потоков. Основная часть работы по созданию потока выполняется make-stream, который мы документируем следующим образом:</p>
+
+<pre><code>      &gt;  make-stream device-type direction element-type name
+      &gt;             Возвращает открытый поток правильного типа для аргументов. Вызывает select-stream-class,
+      &gt;             чтобы выбрать класс. Вызывает make-device-stream, чтобы выбрать правильные аргументы
+      &gt;             для make-instance и создать сам экземпляр, тип устройства - это символ, такой как лента 
+      &gt;             или диск, направление - это символ ввода или вывода или двунаправленный, тип элемента
+      &gt;             - это спецификатор типа, имя - строка: для дисковому устройству присваивается имя пути;
+      &gt;             для ленточного устройства присваивается номер устройства.
+</code></pre>
+
+<p>Поскольку мы документируем две функции, которые вызывают make-stream, мы разрабатываем процедурное определение для make-stream. Мы могли бы представить себе определение make-stream следующим образом:</p>
+
+<pre>
+;;; Called by any function that needs to create a stream. 
+;;; make-stream creates, opens, and returns a stream, 
+(defun make-stream (device-type direction element-type name) 
+  (let* ((stream-class (select-stream-class 
+            direction element-type device-type)) 
+     (stream (make-device-stream device-type stream-class 
+                     name))) 
+    (setf (stream-state stream) 'open) 
+    stream)) 
+</pre>
+
+<p>Два аспекта процедуры make-stream, которые нам необходимы для определения дальнейших областей</p>
+
+<ul>
+<li>Выбор класса потока с помощью select-stream-class </li>
+<li>Создание экземпляра класса stream с помощью make-device-stream</li>
+</ul>
+
+<p>Мы указываем, что make-stream вызывает select-stream-class, чтобы выбрать соответствующий класс на основе желаемого направления, типа элемента и устройства. Связь наборов direction, типа элемента и устройства с классами stream настраивается путем вызова add-stream-class. В этом проекте как select-stream-class, так и add-stream-class являются обычными функциями и не предназначены для специализации программистами. Вместо этого мы ожидаем, что программисты вызовут add-stream-class для каждого создаваемого класса, чтобы связать класс stream с правильным направлением, типом элемента и устройством. Мы документируем select-stream-class и add-stream-class следующим образом:</p>
+
+<pre><code>    &gt;  add-stream-class direction element-type device-type class 
+    &gt;           Устанавливает связь между первыми тремя аргументами и классом. Эта ассоциация 
+    &gt;           используется select-stream-class. direction(направление) - это аргумент ключевого слова;
+    &gt;           element-type(тип элемента) - это спецификатор типа; а device-type(тип устройства) - это символ.
+
+    &gt;  select-stream-class direction element-type device-type 
+    &gt;         Возвращает соответствующий класс для аргументов. Аргументы те же, что и первые три 
+    &gt;         аргумента для add-stream-class.
+</code></pre>
+
+<p>Что касается внешнего протокола, реализация select-stream-class и add-stream-class не имеет значения. Одним из возможных способов реализации этих операций является использование таблицы ассоциаций следующим образом:</p>
+
+<pre>
+(defvar *stream-selector* nil) 
+
+;;; Sets up association from first 3 args to the class, 
+(defun add-stream-class (direction element-type device-type class) 
+  (setq *stream-selector* 
+    (acons (list direction element-type device-type) class 
+           *stream-selector*)))
+
+;;; Chooses the appropriate class based on its arguments. 
+;;; Signals an error if there is no matching stream, 
+(defun select-stream-class (direction element-type device-type) 
+  (let* ((entry (assoc (list direction element-type device-type) 
+               *stream-selector* 
+               :test #'compare-stream-lists)) 
+     (class (cdr entry))) 
+    (if (null entry) 
+    (error "Cannot create a ~A ~A stream for device-type -A." 
+           element-type direction device-type) 
+    class)))
+
+;;; Returns t if the stream lists are equivalent. 
+;;; Used to compare plist keys in *stream-selector* 
+(defun compare-stream-lists (list1 list2) 
+  (and (eql (first list1) (first list2)) 
+       ;; compare the element-types 
+       (equal-typep (second list1) (second list2)) 
+       (eql         (third list1) (third list2))))
+
+;;; Tests whether two type specifiers are equivalent, 
+(defun equal-typep (t1 t2) 
+  (and (subtypep t1 t2) (subtypep t2 t1)))
+</pre>
+
+<p>Ключи в списке ассоциаций - это списки направления, типа элемента и типа устройства. Нам нужно убедиться, что спецификаторы эквивалентного типа правильно выбирают тип элемента: (mod 256) и (беззнаковый байт 8) эквивалентны, и оба должны приводить к потоку, тип элемента которого равен (беззнаковый байт 8). Мы используем equal-typep для сравнения спецификаторов типов.</p>
+
+<p>Задача make-device-stream состоит в том, чтобы вызвать make-instance с правильными аргументами для устройства. Мы ожидаем, что программисты будут специализировать make-device-stream для любого нового типа создаваемого устройства. В этом примере мы предполагаем, что аргументом типа устройства является символ, такой как диск или лента, поэтому методы должны быть отдельными методами, которые специализируются на этих символах.</p>
+
+<pre><code>&gt; make-device-stream device-type class name 
+&gt;                  Создает и возвращает поток; его основная цель - предоставить правильные аргументы 
+&gt;                  make-instance для класса device. Эта обобщенная функция предназначена для специализации
+&gt;                  для каждого типа устройства, тип устройства - это символ, такой как лента или диск, имя - это
+&gt;                  строка: для дискового устройства это имя пути; для ленточного устройства это номер устройства.
+</code></pre>
+
+<p>Таким образом, протокол для подключения нового потока к механизму создания потока состоит из двух задач:</p>
+
+<ul>
+<li>add-stream-класс должен быть вызван для новых создаваемых потоков</li>
+<li>make-device-stream должен быть специализирован для новых классов устройств</li>
+</ul>
+
+<h3>Использование протокола для создания потоков</h3>
+
+<pre>
+;;;; THE MAKE-DEVICE-STREAM GENERIC FUNCTION 
+(defgeneric make-device-stream (device-type class name) 
+  (:documentation "Create an instance with correct initargs.")) 
+
+;;;; METHODS FOR MAKE-DEVICE-STREAM 
+(defmethod make-device-stream ((device-type (eql 'tape)) 
+                   class name) 
+  (make-instance class :unit (parse-integer name)))
+
+(defmethod make-device-stream ((device-type (eql 'disk)) 
+                   class name) 
+  (make-instance class :pathname name)) 
+
+;;;; ADDING CHARACTER DISK STREAMS 
+(add-stream-class :input 'character 'disk 
+          (find-class 'character-disk-input-stream)) 
+
+(add-stream-class :output 'character 'disk 
+          (find-class 'character-disk-output-stream))
+
+(add-stream-class :bidirectional 'character 'disk 
+          (find-class 'character-disk-bidirectional-stream)) 
+
+;;;; ADDING CHARACTER TAPE STREAMS 
+(add-stream-class :input 'character 'tape 
+          (find-class 'character-tape-input-stream))
+
+(add-stream-class :output 'character 'tape 
+          (find-class 'character-tape-output-stream)) 
+
+;;;; ADDING 8-BIT-BYTE DISK STREAMS 
+(add-stream-class :input '(unsigned-byte 8) 'disk 
+          (find-class '8-bit-byte-disk-input-stream))
+
+(add-stream-class :output '(unsigned-byte 8) 'disk 
+          (find-class '8-bit-byte-disk-output-stream))
+
+(add-stream-class :bidirectional '(unsigned-byte 8) 'disk 
+          (find-class 
+           '8-bit-byte-disk-bidirectional-stream)) 
+
+;;;; ADDING 8-BIT-BYTE TAPE STREAMS 
+(add-stream-class :input '(unsigned-byte 8) 'tape 
+          (find-class '8-bit-byte-tape-input-stream))
+
+(add-stream-class :output '(unsigned-byte 8) 'tape 
+          (find-class '8-bit-byte-tape-output-stream)) 
+
+;;;; ADDING 32-BIT-WORD DISK STREAMS 
+(add-stream-class :input '(signed-byte 32) 'disk 
+          (find-class '32-bit-word-disk-input-stream))
+
+(add-stream-class :output '(signed-byte 32) 'disk 
+          (find-class '32-bit-word-disk-output-stream))
+
+(add-stream-class :bidirectional '(signed-byte 32) 'disk 
+          (find-class 
+           '32-bit-word-disk-bidirectional-stream)) 
+
+;;;; ADDING 32-BIT-WORD TAPE STREAMS 
+(add-stream-class :input '(signed-byte 32) 'tape 
+          (find-class '32-bit-word-tape-input-stream))
+
+(add-stream-class :output '(signed-byte 32) 'tape 
+          (find-class '32-bit-word-tape-output-stream)) 
+</pre>
+
+<h2>11.11 КРАТКОЕ ОПИСАНИЕ МЕТОДОВ, ИСПОЛЬЗУЕМЫХ В ПОТОКАХ</h2>
+
+<p>Мы показали пример использования CLOS и объектно-ориентированных методов для решения сложной задачи. Важными методами являются следующие:</p>
+
+<ul>
+<li>Определение классов, представляющих типы объектов, которыми управляет программа</li>
+<li>Документирование внешнего протокола, который будет использоваться клиентами для создания объектов и управления ими.</li>
+<li>Максимальное совместное использование кода при минимизации дублирования как кода, так и информации (знаний), путем
+<ul>
+<li>Организация классов в организацию, которая точно отражает взаимодействие между различными типами объектов</li>
+<li>Документирование внутреннего протокола, который будет использоваться различными классами для связи друг с другом</li>
+</ul></li>
+<li>Предоставление механизма для привязки самих классов к внешнему интерфейсу для создания объектов</li>
+</ul>
+
+<p>Хотя мы задокументировали внешние и внутренние протоколы потоков, нам необходимо задокументировать реализацию потоков, чтобы другие программисты могли расширять потоки. Альтернативой было бы сделать исходный код потоков доступным для программистов.</p>
+
+<h2>11.12 ДОКУМЕНТИРОВАНИЕ РЕАЛИЗАЦИИ ПОТОКОВ</h2>
+
+<p>Задача документирования реализации является сложной, поскольку она требует, чтобы вы знали, какие аспекты реализации являются внутренними, а какие внешними. Мы рекомендуем консервативный подход, который заключается в документировании реализации на строгой основе "необходимо знать". То есть документируйте только те части реализации, которые должны быть поняты сторонними программистами для расширения программы.</p>
+
+<p>(Документация внутренних компонентов была бы полезна для сопровождающих; однако это проблема, отличная от проблемы документирования реализации для расширения другими программистами.)</p>
+
+<p>Важно задокументировать существование и организацию потоковых классов. Программистам необходимо знать, какие методы определены для обобщенных функций во внутренних и внешних протоколах, к каким классам присоединены эти методы и что они делают. Однако мы можем опустить детали того, как работают эти методы. Некоторые методы вообще не нуждаются в документировании. Например, метод wait-for-disk(ожидания диска) является чисто внутренним для дисковых потоков. Программистам, которые хотят расширить потоки для обработки других устройств или типов элементов, не нужно вызывать wait-for-disk, специализировать его или знать о его существовании. С другой стороны, если мы хотим позволить программистам расширять дисковые потоки, нам действительно нужно документировать wait-for-disk(ожидание диска).</p>
+
+<p>Вероятно, мы предпочли бы не раскрывать слоты класса в пользу документирования методов, которые обращаются к ним. Например, документирование методов для stream-state и (setf stream-state) дает программистам достаточную информацию для запроса потока о его состоянии и для изменения этого состояния. Нет необходимости раскрывать тот факт, что это методы чтения и записи для слота.</p>
+</body> </html>
